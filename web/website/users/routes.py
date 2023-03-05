@@ -1,4 +1,3 @@
-from datetime import datetime
 from urllib.parse import urlparse, urljoin
 
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
@@ -6,7 +5,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 
 from .forms import RegistrationForm, LoginForm
 from .models import User
-from .utils import send_email
+from .utils import send_email, email_confirmed
 from website import bcrypt, db
 
 
@@ -34,14 +33,14 @@ def register():
         )
         db.session.add(user)
         db.session.commit()
-        token = user.generate_confirmation_token()
+        token = user.generate_token()
         confirm_url = url_for('users.confirm_email', token=token, _external=True)
         html = render_template('activate.html', confirm_url=confirm_url)
         subject = "Please confirm your email"
         send_email(user.email, subject, html)
         login_user(user)
-        flash(f'A confirmation email has been sent to {current_user.email}.', 'info')
-        return redirect(url_for("main.home"))
+        flash(f'A confirmation email has been sent to {user.email}.', 'info')
+        return redirect(url_for("users.unconfirmed"))
     return render_template('register.html', title='Register', form=form)
 
 
@@ -71,6 +70,7 @@ def logout():
 
 @users.route("/account/")
 @login_required
+@email_confirmed
 def account():
     return render_template('account.html', title='Account')
 
@@ -78,17 +78,32 @@ def account():
 @users.route('/confirm/<token>')
 @login_required
 def confirm_email(token):
-    try:
-        email = User.confirm_token(token)
-    except:
-        flash('The confirmation link is invalid or has expired.', 'danger')
-    user = User.query.filter_by(email=email).first_or_404()
-    if user.confirmed:
-        flash('Account already confirmed. Please login.', 'info')
-    else:
-        user.confirmed = True
-        user.confirmed_on = datetime.now()
-        db.session.add(user)
+    if current_user.confirmed:
+        flash('Account already confirmed.', 'info')
+    elif current_user.valid_token(token):
         db.session.commit()
         flash('You have confirmed your account. Thanks!', 'success')
+    else:
+        flash('The confirmation link is invalid or has expired.', 'danger')
+
     return redirect(url_for('main.home'))
+
+
+@users.route('/unconfirmed')
+@login_required
+def unconfirmed():
+    if current_user.confirmed:
+        return redirect(url_for('main.home'))
+    return render_template('unconfirmed.html')
+
+
+@users.route('/resend')
+@login_required
+def resend_confirmation():
+    token = current_user.generate_token()
+    confirm_url = url_for('users.confirm_email', token=token, _external=True)
+    html = render_template('activate.html', confirm_url=confirm_url)
+    subject = "Please confirm your email"
+    send_email(current_user.email, subject, html)
+    flash('A new confirmation email has been sent.', 'success')
+    return redirect(url_for('users.unconfirmed'))

@@ -1,6 +1,6 @@
 import uuid
 
-from flask import abort, flash, current_app
+from flask import abort, current_app
 
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, current_user
@@ -36,31 +36,39 @@ class User(db.Model, UserMixin):
     def get_id(self):
         return self.uuid
 
-    def generate_confirmation_token(self):
+    def generate_token(self,
+                       context='confirm',
+                       salt_context='confirm-email'):
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-        return serializer.dumps(self.email, salt='confirm-email')
+        return serializer.dumps({context: str(self.uuid)}, salt=salt_context)
 
-    @staticmethod
-    def confirm_token(token, expiration=3600):
+    def valid_token(self,
+                    token,
+                    context='confirm',
+                    salt_context='confirm-email',
+                    expiration=3600
+                    ):
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
-            email = serializer.loads(
-                token,
-                salt='confirm-email',
-                max_age=expiration
-            )
+            data = serializer.loads(token,
+                                    salt=salt_context,
+                                    max_age=expiration
+                                    )
         except:
             return False
-        return email
+        if data.get(context) != str(self.uuid):
+            return False
+        self.confirmed = True
+        self.confirmed_on = func.now()
+        db.session.add(self)
+        return True
 
 
 class MyModelView(ModelView):
-    pass
-    # def is_accessible(self):
-    #     if not current_user.is_anonymous and current_user.admin:
-    #         flash(current_user)
-    #         return current_user.is_authenticated
-    #     return abort(404)
+    def is_accessible(self):
+        if not current_user.is_anonymous and current_user.admin:
+            return current_user.is_authenticated
+        return abort(404)
 
 
 admin.add_view(MyModelView(User, db.session))
