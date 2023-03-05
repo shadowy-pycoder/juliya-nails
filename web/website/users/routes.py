@@ -1,7 +1,7 @@
 from urllib.parse import urlparse, urljoin
 
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
-from flask_login import login_user
+from flask_login import login_user, current_user, logout_user
 
 from .forms import RegistrationForm, LoginForm
 from .models import User
@@ -17,8 +17,10 @@ def is_safe_url(target):
 users = Blueprint('users', __name__)
 
 
-@users.route("/register", methods=['GET', 'POST'])
+@users.route("/register/", methods=['GET', 'POST'])
 def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.home'))
     form = RegistrationForm()
     if form.validate_on_submit():
         password_hash = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
@@ -30,8 +32,10 @@ def register():
     return render_template('register.html', title='Register', form=form)
 
 
-@users.route("/login", methods=['GET', 'POST'])
+@users.route("/login/", methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
         user = User.query.filter_by(email=form.email.data).first()
@@ -44,3 +48,14 @@ def login():
         else:
             flash('Login Unsuccessful. Please check email and password', 'danger')
     return render_template('login.html', title='Login', form=form)
+
+
+@users.route("/logout/")
+def logout():
+    logout_user()
+    return redirect(url_for('main.home'))
+
+
+@users.route("/account/")
+def account():
+    pass

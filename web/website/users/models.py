@@ -1,15 +1,18 @@
 import uuid
 
-from flask_login import UserMixin
+from flask import abort, flash
+
+from flask_admin.contrib.sqla import ModelView
+from flask_login import UserMixin, current_user
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from website import db, login_manager
+from website import db, login_manager, admin
 
 
 @login_manager.user_loader
-def load_user(uuid):
-    return User.query.get(uuid)
+def load_user(user_id):
+    return User.query.get(user_id)
 
 
 class User(db.Model, UserMixin):
@@ -21,10 +24,24 @@ class User(db.Model, UserMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     password = db.Column(db.String(60), nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
-    date = db.Column(db.String(50), nullable=False, default=func.now())
+    registered_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+    confirmed = db.Column(db.Boolean, nullable=False, default=False)
+    confirmed_on = db.Column(db.DateTime(timezone=True), nullable=True)
+    admin = db.Column(db.Boolean, nullable=False, default=False)
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.date})"
+        return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.registered_on})"
 
     def get_id(self):
-        return (self.uuid)
+        return self.uuid
+
+
+class MyModelView(ModelView):
+    def is_accessible(self):
+        if not current_user.is_anonymous and current_user.admin:
+            flash(current_user)
+            return current_user.is_authenticated
+        return abort(404)
+
+
+admin.add_view(MyModelView(User, db.session))

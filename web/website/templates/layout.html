@@ -34,8 +34,16 @@
 
                     </div>
                     <div class="navbar-nav ms-auto">
-                        <a class="nav-link" href="{{url_for('users.login')}}">Login</a>
-                        <a class="nav-link" href="{{url_for('users.register')}}">Register</a>
+                        {% if current_user.is_authenticated %}
+                        {% if current_user.admin %}
+                        <a class="nav-item nav-link" href="{{ url_for('admin.index') }}">Admin Panel</a>
+                        {% endif %}
+                        <a class="nav-item nav-link" href="{{ url_for('users.account') }}">Account</a>
+                        <a class="nav-item nav-link" href="{{ url_for('users.logout') }}">Logout</a>
+                        {% else %}
+                        <a class="nav-item nav-link" href="{{ url_for('users.login') }}">Login</a>
+                        <a class="nav-item nav-link" href="{{ url_for('users.register') }}">Register</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
