@@ -12,3 +12,7 @@ def home():
 @main.route("/about")
 def about():
     return render_template('about.html', title='About')
+
+
+def page_not_found(e):
+    return render_template('404.html'), 404

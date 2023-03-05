@@ -1,9 +1,10 @@
 import uuid
 
-from flask import abort, flash
+from flask import abort, flash, current_app
 
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, current_user
+from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -35,13 +36,31 @@ class User(db.Model, UserMixin):
     def get_id(self):
         return self.uuid
 
+    def generate_confirmation_token(self):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        return serializer.dumps(self.email, salt='confirm-email')
+
+    @staticmethod
+    def confirm_token(token, expiration=3600):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            email = serializer.loads(
+                token,
+                salt='confirm-email',
+                max_age=expiration
+            )
+        except:
+            return False
+        return email
+
 
 class MyModelView(ModelView):
-    def is_accessible(self):
-        if not current_user.is_anonymous and current_user.admin:
-            flash(current_user)
-            return current_user.is_authenticated
-        return abort(404)
+    pass
+    # def is_accessible(self):
+    #     if not current_user.is_anonymous and current_user.admin:
+    #         flash(current_user)
+    #         return current_user.is_authenticated
+    #     return abort(404)
 
 
 admin.add_view(MyModelView(User, db.session))

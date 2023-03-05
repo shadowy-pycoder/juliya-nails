@@ -1,10 +1,12 @@
+from datetime import datetime
 from urllib.parse import urlparse, urljoin
 
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
-from flask_login import login_user, current_user, logout_user
+from flask_login import login_user, current_user, logout_user, login_required
 
 from .forms import RegistrationForm, LoginForm
 from .models import User
+from .utils import send_email
 from website import bcrypt, db
 
 
@@ -24,11 +26,22 @@ def register():
     form = RegistrationForm()
     if form.validate_on_submit():
         password_hash = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
-        user = User(username=form.username.data, email=form.email.data, password=password_hash)
+        user = User(
+            username=form.username.data,
+            email=form.email.data,
+            password=password_hash,
+            confirmed=False,
+        )
         db.session.add(user)
         db.session.commit()
-        flash('Your account has been created! You are now able to log in', 'success')
-        return redirect(url_for('users.login'))
+        token = user.generate_confirmation_token()
+        confirm_url = url_for('users.confirm_email', token=token, _external=True)
+        html = render_template('activate.html', confirm_url=confirm_url)
+        subject = "Please confirm your email"
+        send_email(user.email, subject, html)
+        login_user(user)
+        flash(f'A confirmation email has been sent to {current_user.email}.', 'info')
+        return redirect(url_for("main.home"))
     return render_template('register.html', title='Register', form=form)
 
 
@@ -57,5 +70,25 @@ def logout():
 
 
 @users.route("/account/")
+@login_required
 def account():
-    pass
+    return render_template('account.html', title='Account')
+
+
+@users.route('/confirm/<token>')
+@login_required
+def confirm_email(token):
+    try:
+        email = User.confirm_token(token)
+    except:
+        flash('The confirmation link is invalid or has expired.', 'danger')
+    user = User.query.filter_by(email=email).first_or_404()
+    if user.confirmed:
+        flash('Account already confirmed. Please login.', 'info')
+    else:
+        user.confirmed = True
+        user.confirmed_on = datetime.now()
+        db.session.add(user)
+        db.session.commit()
+        flash('You have confirmed your account. Thanks!', 'success')
+    return redirect(url_for('main.home'))
