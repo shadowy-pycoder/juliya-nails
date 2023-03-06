@@ -36,32 +36,55 @@ class User(db.Model, UserMixin):
     def get_id(self):
         return self.uuid
 
-    def generate_token(self,
-                       context='confirm',
-                       salt_context='confirm-email'):
+    def generate_token(
+        self,
+        context='confirm',
+        salt_context='confirm-email'
+    ):
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         return serializer.dumps({context: str(self.uuid)}, salt=salt_context)
 
-    def valid_token(self,
-                    token,
-                    context='confirm',
-                    salt_context='confirm-email',
-                    expiration=3600
-                    ):
+    def confirm_email_token(
+        self,
+        token,
+        salt_context='confirm-email',
+        expiration=3600
+    ):
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
-            data = serializer.loads(token,
-                                    salt=salt_context,
-                                    max_age=expiration
-                                    )
+            data = serializer.loads(
+                token,
+                salt=salt_context,
+                max_age=expiration
+            )
         except:
             return False
-        if data.get(context) != str(self.uuid):
+        if data.get('confirm') != str(self.uuid):
             return False
         self.confirmed = True
         self.confirmed_on = func.now()
         db.session.add(self)
         return True
+
+    @staticmethod
+    def reset_password_token(
+        token,
+        salt_context='reset-password',
+        expiration=3600
+    ):
+        serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
+        try:
+            data = serializer.loads(
+                token,
+                salt=salt_context,
+                max_age=expiration
+            )
+        except:
+            return False
+        user = User.query.get(data.get('reset'))
+        if user is None:
+            return False
+        return user
 
 
 class MyModelView(ModelView):
