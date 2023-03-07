@@ -40,9 +40,9 @@ def change_email_request():
         session['new_email'] = form.email.data
         token = current_user.generate_token(context='change', salt_context='change-email')
         change_url = url_for('users.change_email', token=token, _external=True)
-        html = render_template('users/email/change_email.html', change_url=change_url, user=current_user)
+        template = 'users/email/change_email'
         subject = "Please confirm your email"
-        send_email(form.email.data, subject, html)
+        send_email(form.email.data, subject, template, change_url=change_url, user=current_user)
         flash('An email with instructions to confirm your new email address has been sent.', 'info')
     return render_template('users/change_email.html', title='Change Email', form=form)
 

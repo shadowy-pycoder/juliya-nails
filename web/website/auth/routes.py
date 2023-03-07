@@ -34,9 +34,9 @@ def register():
         db.session.commit()
         token = user.generate_token()
         confirm_url = url_for('auth.confirm_email', token=token, _external=True)
-        html = render_template('auth/email/confirm_email.html', confirm_url=confirm_url)
+        template = 'auth/email/confirm_email'
         subject = "Please confirm your email"
-        send_email(user.email, subject, html)
+        send_email(user.email, subject, template, confirm_url=confirm_url)
         login_user(user)
         flash(f'A confirmation email has been sent to {user.email}.', 'info')
         return redirect(url_for("auth.unconfirmed"))
@@ -94,9 +94,9 @@ def unconfirmed():
 def resend_confirmation():
     token = current_user.generate_token()
     confirm_url = url_for('auth.confirm_email', token=token, _external=True)
-    html = render_template('auth/email/confirm_email.html', confirm_url=confirm_url)
+    template = 'auth/email/confirm_email'
     subject = "Please confirm your email"
-    send_email(current_user.email, subject, html)
+    send_email(current_user.email, subject, template, confirm_url=confirm_url)
     flash('A new confirmation email has been sent.', 'success')
     return redirect(url_for('auth.unconfirmed'))
 
@@ -114,9 +114,9 @@ def password_reset_request():
                 context='reset',
                 salt_context='reset-password')
             reset_url = url_for('auth.password_reset_token', token=token, _external=True)
-            html = render_template('auth/reset_password.html', reset_url=reset_url)
+            template = 'auth/reset_password'
             subject = 'Reset your password'
-            send_email(user.email, subject, html)
+            send_email(user.email, subject, template, reset_url=reset_url)
             return redirect(url_for('auth.login'))
     return render_template('auth/reset_request.html', form=form)
 

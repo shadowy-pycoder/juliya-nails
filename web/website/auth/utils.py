@@ -1,20 +1,23 @@
 from flask_login import current_user
 from functools import wraps
 
-from flask import current_app, flash, redirect, url_for
+from flask import current_app, flash, redirect, url_for, render_template
 from flask_mail import Message
 
 
 from website import mail
 
 
-def send_email(to, subject, template):
+def send_email(to, subject, template, **kwargs):
     msg = Message(
         subject,
         recipients=[to],
         html=template,
         sender=current_app.config['MAIL_DEFAULT_SENDER']
+    
     )
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
     mail.send(msg)
 
 

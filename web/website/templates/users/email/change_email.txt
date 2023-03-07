@@ -1,0 +1,7 @@
+Dear {{ user.username }}
+
+Please follow this link to confirm your new email address:
+
+{{ change_url }}
+
+Cheers!
