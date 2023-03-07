@@ -64,7 +64,6 @@ class User(UserMixin, db.Model):
             return False
         self.confirmed = True
         self.confirmed_on = func.now()
-        db.session.add(self)
         return True
 
     @staticmethod
