@@ -16,9 +16,9 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
-class User(db.Model, UserMixin):
+class User(UserMixin, db.Model):
 
-    __tablename__ = 'user'
+    __tablename__ = 'users'
 
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = db.Column(db.String(20), unique=True, nullable=False)
@@ -47,6 +47,7 @@ class User(db.Model, UserMixin):
     def confirm_email_token(
         self,
         token,
+        context='confirm',
         salt_context='confirm-email',
         expiration=3600
     ):
@@ -59,7 +60,7 @@ class User(db.Model, UserMixin):
             )
         except:
             return False
-        if data.get('confirm') != str(self.uuid):
+        if data.get(context) != str(self.uuid):
             return False
         self.confirmed = True
         self.confirmed_on = func.now()
@@ -85,6 +86,7 @@ class User(db.Model, UserMixin):
         if user is None:
             return False
         return user
+    
 
 
 class MyModelView(ModelView):
@@ -92,6 +94,7 @@ class MyModelView(ModelView):
         if not current_user.is_anonymous and current_user.admin:
             return current_user.is_authenticated
         return abort(404)
+    
 
 
 admin.add_view(MyModelView(User, db.session))
