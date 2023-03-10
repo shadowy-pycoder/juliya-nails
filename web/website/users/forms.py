@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, DateTimeLocalField
 from wtforms.validators import DataRequired, Length, Email, EqualTo
 
 from ..auth.forms import CustomValidatorsMixin
@@ -19,4 +19,15 @@ class EmailChangeForm(CustomValidatorsMixin, FlaskForm):
                         validators=[DataRequired(), Email(), Length(max=100)])
     old_password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Update Email')
+
+class EntryForm(CustomValidatorsMixin, FlaskForm):
+
+    service_type = SelectField(
+        label='Service Type',
+        validators=[DataRequired()],
+        choices=['A', 'B', 'C']
+    )
+    date = DateTimeLocalField(label='label')
+    submit = SubmitField('Update Email')
+
     

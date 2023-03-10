@@ -8,7 +8,7 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
-from website import db, login_manager, admin
+from . import db, login_manager, admin, bcrypt
 
 
 @login_manager.user_loader
@@ -23,15 +23,28 @@ class User(UserMixin, db.Model):
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    password = db.Column(db.String(60), nullable=False)
+    password_hash = db.Column(db.String(60), nullable=False)
     image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     registered_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     confirmed = db.Column(db.Boolean, nullable=False, default=False)
     confirmed_on = db.Column(db.DateTime(timezone=True), nullable=True)
     admin = db.Column(db.Boolean, nullable=False, default=False)
+    entries = db.relationship('Entry', backref='user', lazy='dynamic')
+    posts = db.relationship('Post', backref='author', lazy='dynamic')
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.registered_on})"
+    
+    @property
+    def password(self):
+        raise AttributeError('Password is not a readable attribute')
+
+    @password.setter
+    def password(self, candidate):
+        self.password_hash = bcrypt.generate_password_hash(candidate).decode('UTF-8')
+
+    def verify_password(self, candidate):
+        return bcrypt.check_password_hash(self.password_hash, candidate)
 
     def get_id(self):
         return self.uuid
@@ -87,6 +100,37 @@ class User(UserMixin, db.Model):
         return user
     
 
+class Entry(db.Model):
+
+    __tablename__ = 'entries'
+
+    uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    name = db.Column(db.String(50), nullable=False)
+    created_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+    date_and_time = db.Column(db.DateTime(timezone=True), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+
+class Service(db.Model):
+
+    __tablename__ = 'services'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True)
+
+
+class Post(db.Model):
+
+    __tablename__ = 'posts'
+
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(100), nullable=False)
+    posted_on = db.Column(db.DateTime, nullable=False, default=func.now())
+    image = db.Column(db.String(20))
+    content = db.Column(db.Text, nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+
+    
+
 
 class MyModelView(ModelView):
     def is_accessible(self):
@@ -96,4 +140,7 @@ class MyModelView(ModelView):
     
 
 
+
 admin.add_view(MyModelView(User, db.session))
+admin.add_view(MyModelView(Entry, db.session))
+admin.add_view(MyModelView(Post, db.session))

@@ -3,10 +3,10 @@ import re
 from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, BooleanField
-from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError
+from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Regexp
 
-from ..users.models import User
-from website import bcrypt
+from ..models import User
+from .. import bcrypt
 
 class CustomValidatorsMixin:
 
@@ -47,8 +47,12 @@ class CustomValidatorsMixin:
 
 class RegistrationForm(CustomValidatorsMixin, FlaskForm):
 
-    username = StringField('Username',
-                           validators=[DataRequired(), Length(min=2, max=20)])
+    username = StringField(
+        'Username', validators=[
+        DataRequired(), 
+        Length(min=2, max=20), 
+        Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 
+               message='Usernames must have only letters, numbers, dots or underscores')])
     email = StringField('Email',
                         validators=[DataRequired(), Email(), Length(max=100)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])

@@ -5,9 +5,9 @@ from flask_login import login_user, current_user, logout_user, login_required
 
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
-from ..users.models import User
-from .utils import send_email
-from website import bcrypt, db
+from ..models import User
+from ..utils import send_email
+from .. import db
 
 auth = Blueprint('auth', __name__)
 
@@ -23,11 +23,10 @@ def register():
         return redirect(url_for('main.home'))
     form = RegistrationForm()
     if form.validate_on_submit():
-        password_hash = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
         user = User(
             username=form.username.data,
             email=form.email.data,
-            password=password_hash,
+            password=form.password.data,
             confirmed=False,
         )
         db.session.add(user)
@@ -49,8 +48,8 @@ def login():
         return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = User.query.filter_by(email=form.email.data).first()
-        if user and bcrypt.check_password_hash(user.password, form.password.data):
+        user: User = User.query.filter_by(email=form.email.data).first()
+        if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
             if not is_safe_url(next_page):
@@ -108,7 +107,7 @@ def password_reset_request():
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
         flash('An email with instructions to reset your password has been sent.', 'info')
-        user = User.query.filter_by(email=form.email.data.lower().strip()).first()
+        user: User = User.query.filter_by(email=form.email.data.lower().strip()).first()
         if user:
             token = user.generate_token(
                 context='reset',
@@ -127,10 +126,9 @@ def password_reset_token(token):
         return redirect(url_for('home'))
     form = PasswordResetForm()
     if form.validate_on_submit():
-        user = User.reset_password_token(token)
+        user: User = User.reset_password_token(token)
         if user:
-            password_hash = bcrypt.generate_password_hash(form.password.data).decode('UTF-8')
-            user.password = password_hash
+            user.password = form.password.data
             db.session.add(user)
             db.session.commit()
             flash('Your password has been updated! You are now able to log in', 'success')

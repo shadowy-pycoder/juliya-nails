@@ -1,9 +1,9 @@
 from flask import flash, render_template, redirect, url_for, session, Blueprint
 from flask_login import current_user, login_required
 
-from .forms import PasswordChangeForm, EmailChangeForm
-from ..auth.utils import send_email, email_confirmed
-from website import bcrypt, db
+from .forms import PasswordChangeForm, EmailChangeForm, EntryForm
+from ..utils import send_email, email_confirmed
+from .. import db
 
 
 users = Blueprint('users', __name__)
@@ -13,7 +13,7 @@ users = Blueprint('users', __name__)
 @login_required
 @email_confirmed
 def profile():
-    form = None
+    form = EntryForm()
     return render_template('users/profile.html', title='Profile', form=form)
 
 
@@ -23,8 +23,7 @@ def profile():
 def change_password_request():
     form = PasswordChangeForm()
     if form.validate_on_submit():
-        password_hash = bcrypt.generate_password_hash(form.new_password.data).decode('UTF-8')
-        current_user.password = password_hash
+        current_user.password = form.new_password.data
         db.session.add(current_user)
         db.session.commit()
         flash('Your password has been updated.', 'success')
