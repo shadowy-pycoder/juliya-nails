@@ -26,7 +26,7 @@ class CustomValidatorsMixin:
             raise ValidationError(message + ', '.join(err for err in error_log))
             
     def validate_old_password(self, old_password: FlaskForm):
-        if not bcrypt.check_password_hash(current_user.password, old_password.data):
+        if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):
             raise ValidationError('Entered password is incorrect. Please try again')
     
     def validate_new_password(self, new_password: FlaskForm):

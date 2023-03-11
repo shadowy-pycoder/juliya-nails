@@ -2,6 +2,7 @@ from flask import flash, render_template, redirect, url_for, session, Blueprint
 from flask_login import current_user, login_required
 
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm
+from ..models import User
 from ..utils import send_email, email_confirmed
 from .. import db
 
@@ -9,15 +10,16 @@ from .. import db
 users = Blueprint('users', __name__)
 
 
-@users.route("/profile", methods=['GET', 'POST'])
+@users.route("/profile/<username>", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
-def profile():
+def profile(username):
+    user = User.query.filter_by(username=username).first()
     form = EntryForm()
-    return render_template('users/profile.html', title='Profile', form=form)
+    return render_template('users/profile.html', title='Profile', form=form, user=user)
 
 
-@users.route("/change_password", methods=['GET', 'POST'])
+@users.route("/change-password", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 def change_password_request():
@@ -30,7 +32,7 @@ def change_password_request():
         return redirect(url_for('users.profile'))
     return render_template('users/change_password.html', title='Change Password', form=form)
 
-@users.route("/change_email", methods=['GET', 'POST'])
+@users.route("/change-email", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 def change_email_request():
@@ -46,7 +48,7 @@ def change_email_request():
     return render_template('users/change_email.html', title='Change Email', form=form)
 
 
-@users.route("/change_email/<token>", methods=['GET', 'POST'])
+@users.route("/change-email/<token>", methods=['GET', 'POST'])
 @login_required
 def change_email(token):
     if current_user.confirm_email_token(token, context='change', salt_context='change-email'):

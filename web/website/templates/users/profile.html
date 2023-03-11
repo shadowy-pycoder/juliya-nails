@@ -3,8 +3,12 @@
 <div class="content-section">
     <div class="media">
         <div class="media-body">
-            <h2 class="account-heading">{{ current_user.username }}</h2>
-            <p class="text-secondary">{{ current_user.email }}</p>
+            <h2 class="account-heading">{{ user.username }}</h2>
+            <p class="text-secondary">{{ user.email }}</p>
+            {% if current_user.admin%}
+            <a href="{{ url_for('user.edit_view', id=user.uuid)}}" class="btn btn-outline-danger" role="button">Edit
+                User</a>
+            {% endif %}
         </div>
     </div>
     <a href="{{ url_for('users.change_email_request') }}">Change Email Address</a>

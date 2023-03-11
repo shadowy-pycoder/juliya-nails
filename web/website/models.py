@@ -1,15 +1,17 @@
 import uuid
 
-from flask import abort, current_app
+from flask import abort, current_app, request, flash
 
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, current_user
+from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
+from wtforms import StringField
 
 from . import db, login_manager, admin, bcrypt
-
+from .utils import save_image, delete_image
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -127,9 +129,7 @@ class Post(db.Model):
     posted_on = db.Column(db.DateTime, nullable=False, default=func.now())
     image = db.Column(db.String(20))
     content = db.Column(db.Text, nullable=False)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-
-    
+    author_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
 
 
 class MyModelView(ModelView):
@@ -138,9 +138,56 @@ class MyModelView(ModelView):
             return current_user.is_authenticated
         return abort(404)
     
+class UserView(MyModelView):
+    column_display_pk = True
+    column_display_all_relations = True
+
+    form_excluded_columns = ('password_hash')
+
+    form_extra_fields = {
+        'new_password': StringField('New Password'),
+        'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])])
+    }
+
+    form_columns = (
+        'username',
+        'email',
+        'new_password',
+        'image_file',
+        'profile_image',
+        'confirmed',
+        'confirmed_on',
+        'admin',
+    )
+    form_widget_args = {
+        'image_file':{
+            'disabled':True
+        }
+    }
+    def on_form_prefill(self, form, id):
+        self.img = form.image_file.data
+
+    def on_model_change(self, form, model: User, is_created):
+        if form.new_password.data != '':
+            model.password = form.new_password.data
+
+        if form.profile_image.data is not None:
+            if self.img != 'default.jpg':
+                try:
+                    delete_image(self.img, path='static/images/profiles')
+                except FileNotFoundError:
+                    pass
+            model.image_file = save_image(form.profile_image, path='static/images/profiles')
+        
+        
+
+        
+
+    
 
 
 
-admin.add_view(MyModelView(User, db.session))
+
+admin.add_view(UserView(User, db.session))
 admin.add_view(MyModelView(Entry, db.session))
 admin.add_view(MyModelView(Post, db.session))

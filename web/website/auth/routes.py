@@ -100,7 +100,7 @@ def resend_confirmation():
     return redirect(url_for('auth.unconfirmed'))
 
 
-@auth.route('/reset_request', methods=['GET', 'POST'])
+@auth.route('/reset-request', methods=['GET', 'POST'])
 def password_reset_request():
     if not current_user.is_anonymous:
         return redirect(url_for('main.home'))
@@ -120,7 +120,7 @@ def password_reset_request():
     return render_template('auth/reset_request.html', form=form)
 
 
-@auth.route("/reset_password/<token>", methods=['GET', 'POST'])
+@auth.route("/reset-password/<token>", methods=['GET', 'POST'])
 def password_reset_token(token):
     if current_user.is_authenticated:
         return redirect(url_for('home'))

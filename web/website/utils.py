@@ -7,7 +7,7 @@ from flask import current_app, flash, redirect, url_for, render_template, Flask,
 from flask_login import current_user
 from flask_mail import Message
 from flask_wtf.file import FileField
-from werkzeug.utils import secure_filename
+from PIL import Image
 
 from . import mail
 
@@ -55,11 +55,19 @@ def admin_required(func):
         return func(*args, **kwargs)
     return decorated_function
 
-def save_post_picture(post_pic: FileField):
-    file = post_pic
-    filename = secure_filename(file.data.filename)
-    _, f_ext = os.path.splitext(filename)
+def save_image(file: FileField, path='static/images/posts'):
+    _, f_ext = os.path.splitext(file.data.filename)
     filename = secrets.token_hex(8) + f_ext
-    pic_path = os.path.join(current_app.root_path, 'static/images/posts', filename)
-    file.data.save(pic_path)
+    img_path = os.path.join(current_app.root_path, path, filename)
+    if path == 'static/images/profiles':
+        output_size = (125, 125)
+        img = Image.open(file.data)
+        img.thumbnail(output_size)
+        img.save(img_path)
+        return filename
+    file.data.save(img_path)
     return filename
+
+def delete_image(filename, path='static/images/posts'):
+    img_path = os.path.join(current_app.root_path, path, filename)
+    os.unlink(img_path)

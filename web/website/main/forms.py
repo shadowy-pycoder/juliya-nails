@@ -10,3 +10,10 @@ class PostForm(FlaskForm):
     image = FileField('Upload Image', validators=[FileAllowed(['jpg', 'png'])])
     content = CKEditorField('Content', validators=[DataRequired()])
     submit = SubmitField('Post')
+
+
+class EditPostForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    image = FileField('Upload Image', validators=[FileAllowed(['jpg', 'png'])])
+    content = CKEditorField('Content', validators=[DataRequired()])
+    submit = SubmitField('Update Post')

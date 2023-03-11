@@ -1,16 +1,27 @@
 {% extends 'layout.html' %}
 {% block content %}
 
+{% if current_user.admin%}
 <a href="{{ url_for('main.create_post')}}" class="btn btn-outline-success btn-lg" role="button">Create New Post</a>
+{% endif %}
 {% for post in posts %}
 <article class="media content-section">
     <div class="media-body">
         <div class="article-metadata">
             <a class="mr-2" href="/">{{
                 post.author.username }}</a>
-            <small class="text-muted">{{ post.posted_on.strftime('%Y-%m-%d') }}</small>
+            <small class="text-muted">{{ post.posted_on.strftime('%Y-%m-%d %H:%M') }}</small>
         </div>
-        <h2><a class="article-title" href="{{ url_for('main.home', post_id=post.id) }}">{{ post.title }}</a></h2>
+        <div class="article-title">
+            <a class="article-title" href="{{ url_for('main.home', post=post.id) }}">{{ post.title }}</a>
+            {% if current_user.admin%}
+            <a href="{{ url_for('main.edit_post', post_id=post.id)}}" class="btn btn-outline-info" role="button">Edit
+                Post</a>
+            <a href="{{ url_for('main.delete_post', post_id=post.id)}}" class="btn btn-outline-danger"
+                role="button">Delete
+                Post</a>
+            {% endif %}
+        </div>
         <img src="{{url_for('static', filename='images/posts/' + post.image)}} " alt="" srcset="">
         <p>{{ post.content | safe }}</p>
     </div>
