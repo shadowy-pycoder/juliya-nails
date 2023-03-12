@@ -26,7 +26,6 @@ ckeditor = CKEditor()
 def create_app(config=Config):
     app = Flask(__name__)
     app.config.from_object(config)
-    app.config['UPLOADS_DEFAULT_DEST'] = 'static/images'
     db.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)

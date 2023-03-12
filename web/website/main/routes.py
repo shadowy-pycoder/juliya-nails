@@ -12,7 +12,7 @@ main = Blueprint('main', __name__)
 @main.route("/home")
 def home():
     posts = Post.query.order_by(Post.posted_on.desc()).all()
-    return render_template('home.html', posts=posts)
+    return render_template('home.html', title='Home', posts=posts)
 
 
 @main.route("/about")
@@ -21,7 +21,7 @@ def about():
 
 
 def page_not_found(e):
-    return render_template('404.html'), 404
+    return render_template('404.html', title='Page Not Found'), 404
 
 @main.route("/create-post", methods=['GET', 'POST'])
 @admin_required
@@ -34,7 +34,7 @@ def create_post():
         db.session.commit()
         flash('Your post has been created!', 'success')
         return redirect(url_for('main.home'))
-    return render_template('create_post.html', form=form) 
+    return render_template('create_post.html', title='Create Post', legend='Create Post', form=form) 
 
 @main.route("/edit-post/<post_id>", methods=['GET', 'POST'])
 @admin_required
@@ -52,17 +52,18 @@ def edit_post(post_id):
         return redirect(url_for('main.home'))
     form.title.data = post.title
     form.content.data = post.content
-    return render_template('edit_post.html', form=form)
+    return render_template('edit_post.html', title='Edit Post', legend='Edit Post', form=form)
 
 
 @main.route("/delete-post/<post_id>", methods=['GET', 'POST'])
 @admin_required
 def delete_post(post_id):
     post: Post = Post.query.get_or_404(post_id)
-    try:
-        delete_image(post.image)
-    except FileNotFoundError:
-        pass
+    if post.image is not None:
+        try:
+            delete_image(post.image)
+        except FileNotFoundError:
+            pass
     db.session.delete(post)
     db.session.commit()
     flash('Your post has been deleted!', 'success')

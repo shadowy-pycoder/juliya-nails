@@ -1,6 +1,6 @@
+from flask_ckeditor import CKEditorField
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField
-from flask_ckeditor import CKEditorField
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 

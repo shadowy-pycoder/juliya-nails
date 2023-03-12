@@ -1,7 +1,6 @@
 import uuid
 
-from flask import abort, current_app, request, flash
-
+from flask import abort, current_app
 from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, current_user
 from flask_wtf.file import FileAllowed, FileField
@@ -9,6 +8,7 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from wtforms import StringField
+from wtforms.validators import ValidationError
 
 from . import db, login_manager, admin, bcrypt
 from .utils import save_image, delete_image
@@ -141,6 +141,7 @@ class MyModelView(ModelView):
 class UserView(MyModelView):
     column_display_pk = True
     column_display_all_relations = True
+    column_hide_backrefs = False
 
     form_excluded_columns = ('password_hash')
 
@@ -170,24 +171,67 @@ class UserView(MyModelView):
     def on_model_change(self, form, model: User, is_created):
         if form.new_password.data != '':
             model.password = form.new_password.data
+        elif is_created:
+            raise ValidationError('Password must not be empty.')
 
         if form.profile_image.data is not None:
-            if self.img != 'default.jpg':
+            if not is_created and self.img != 'default.jpg':
                 try:
-                    delete_image(self.img, path='static/images/profiles')
+                    delete_image(self.img, path='profiles')
                 except FileNotFoundError:
                     pass
-            model.image_file = save_image(form.profile_image, path='static/images/profiles')
+            model.image_file = save_image(form.profile_image, path='profiles')
+    
+    def on_model_delete(self, model: User):
+        try:
+            delete_image(model.image_file, path='profiles')
+        except FileNotFoundError:
+            pass
         
         
+class PostView(MyModelView):
+    column_display_pk = True
+    column_display_all_relations = True
+    column_hide_backrefs = False
 
-        
+    form_extra_fields = {
+        'new_image': FileField('Upload Post Image', validators=[FileAllowed(['jpg', 'png'])])
+    }
+
+    form_columns = (
+        'title',
+        'posted_on',
+        'image',
+        'new_image',
+        'content',
+        'author_id',
+    )
+    form_widget_args = {
+        'image':{
+            'disabled':True
+        }
+    }
+    def on_form_prefill(self, form, id):
+        self.img = form.image.data
+
+    def on_model_change(self, form, model: Post, is_created):
+        if form.new_image.data is not None:
+            try:
+                delete_image(self.img)
+            except FileNotFoundError:
+                pass
+            model.image = save_image(form.new_image)
+
+    def on_model_delete(self, model: Post):
+        if model.image is not None:
+            try:
+                delete_image(model.image)
+            except FileNotFoundError:
+                pass
 
     
 
 
-
-
 admin.add_view(UserView(User, db.session))
 admin.add_view(MyModelView(Entry, db.session))
-admin.add_view(MyModelView(Post, db.session))
+admin.add_view(PostView(Post, db.session))

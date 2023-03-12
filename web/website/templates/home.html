@@ -22,7 +22,9 @@
                 Post</a>
             {% endif %}
         </div>
+        {% if post.image %}
         <img src="{{url_for('static', filename='images/posts/' + post.image)}} " alt="" srcset="">
+        {% endif %}
         <p>{{ post.content | safe }}</p>
     </div>
 </article>

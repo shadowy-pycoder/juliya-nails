@@ -39,7 +39,7 @@ def register():
         login_user(user)
         flash(f'A confirmation email has been sent to {user.email}.', 'info')
         return redirect(url_for("auth.unconfirmed"))
-    return render_template('auth/register.html', title='Register', form=form)
+    return render_template('auth/register.html', title='Register', legend='Register', form=form)
 
 
 @auth.route("/login", methods=['GET', 'POST'])
@@ -57,7 +57,7 @@ def login():
             return redirect(next_page) if next_page else redirect(url_for('main.home'))
         else:
             flash('Login Unsuccessful. Please check email and password', 'danger')
-    return render_template('auth/login.html', title='Login', form=form)
+    return render_template('auth/login.html', title='Login', legend='Login', form=form)
 
 
 @auth.route("/logout")
@@ -117,7 +117,10 @@ def password_reset_request():
             subject = 'Reset your password'
             send_email(user.email, subject, template, reset_url=reset_url)
             return redirect(url_for('auth.login'))
-    return render_template('auth/reset_request.html', form=form)
+    return render_template('auth/reset_request.html', 
+                           title='Reset Request', 
+                           legend='Password Reset Request', 
+                           form=form)
 
 
 @auth.route("/reset-password/<token>", methods=['GET', 'POST'])
@@ -136,4 +139,7 @@ def password_reset_token(token):
         else:
             flash('That is an invalid or expired token', 'warning')
             return redirect(url_for('auth.password_reset_request'))
-    return render_template('auth/reset_password.html', title='Reset Password', form=form)
+    return render_template('auth/reset_password.html', 
+                           title='Reset Password', 
+                           legend='Reset Password', 
+                           form=form)

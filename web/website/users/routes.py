@@ -14,7 +14,7 @@ users = Blueprint('users', __name__)
 @login_required
 @email_confirmed
 def profile(username):
-    user = User.query.filter_by(username=username).first()
+    user = User.query.filter_by(username=username).first_or_404()
     form = EntryForm()
     return render_template('users/profile.html', title='Profile', form=form, user=user)
 
@@ -30,7 +30,7 @@ def change_password_request():
         db.session.commit()
         flash('Your password has been updated.', 'success')
         return redirect(url_for('users.profile'))
-    return render_template('users/change_password.html', title='Change Password', form=form)
+    return render_template('users/change_password.html', title='Change Password', legend='Change Password', form=form)
 
 @users.route("/change-email", methods=['GET', 'POST'])
 @login_required
@@ -45,7 +45,7 @@ def change_email_request():
         subject = "Please confirm your email"
         send_email(form.email.data, subject, template, change_url=change_url, user=current_user)
         flash('An email with instructions to confirm your new email address has been sent.', 'info')
-    return render_template('users/change_email.html', title='Change Email', form=form)
+    return render_template('users/change_email.html', title='Change Email', legend='Change Email', form=form)
 
 
 @users.route("/change-email/<token>", methods=['GET', 'POST'])
