@@ -12,7 +12,6 @@ from PIL import Image
 from . import mail
 
 
-
 def send_async_email(app: Flask, msg: Message):
     with app.app_context():
         mail.send(msg)
@@ -42,6 +41,7 @@ def email_confirmed(func):
 
     return decorated_function
 
+
 def admin_required(func):
     @wraps(func)
     def decorated_function(*args, **kwargs):
@@ -50,16 +50,17 @@ def admin_required(func):
         return func(*args, **kwargs)
     return decorated_function
 
+
 def save_image(file: FileField, path='posts'):
     _, f_ext = os.path.splitext(file.data.filename)
     filename = secrets.token_hex(8) + f_ext
     img_path = os.path.join(
-        current_app.root_path, 
+        current_app.root_path,
         current_app.config['UPLOAD_FOLDER'],
-        path, 
+        path,
         filename)
     if path != 'posts':
-        output_size = (125, 125)
+        output_size = (150, 150)
         img = Image.open(file.data)
         img.thumbnail(output_size)
         img.save(img_path)
@@ -67,10 +68,11 @@ def save_image(file: FileField, path='posts'):
     file.data.save(img_path)
     return filename
 
+
 def delete_image(filename, path='posts'):
     img_path = os.path.join(
-        current_app.root_path, 
-        current_app.config['UPLOAD_FOLDER'], 
+        current_app.root_path,
+        current_app.config['UPLOAD_FOLDER'],
         path,
         filename)
     os.unlink(img_path)

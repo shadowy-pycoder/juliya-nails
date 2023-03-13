@@ -25,6 +25,12 @@ class DevelopmentConfig(Config):
     DEBUG = True
 
 
-config = {
-    'development': DevelopmentConfig
-}
+def populate(cls: str = 'Config') -> dict:
+    res = {}
+    for k, v in dict(globals()).items():
+        if k.endswith(cls) and k != cls:
+            res[k.rstrip(cls).lower()] = v
+    return res
+
+
+config = populate()

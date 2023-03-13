@@ -1,33 +1,55 @@
 {% extends 'layout.html' %}
 {% block content %}
 
-{% if current_user.admin%}
-<a href="{{ url_for('main.create_post')}}" class="btn btn-outline-success btn-lg" role="button">Create New Post</a>
-{% endif %}
+
 {% for post in posts %}
 <article class="media content-section">
+
     <div class="media-body">
+
         <div class="article-metadata">
-            <a class="mr-2" href="/">{{
-                post.author.username }}</a>
-            <small class="text-muted">{{ post.posted_on.strftime('%Y-%m-%d %H:%M') }}</small>
-        </div>
-        <div class="article-title">
-            <a class="article-title" href="{{ url_for('main.home', post=post.id) }}">{{ post.title }}</a>
+            <div class="article-metadata-avatar">
+                <div class="thumbnail author-avatar">
+                    <img class="account-img "
+                        src="{{ url_for('static', filename='images/profiles/' + post.author.image_file) }}">
+                </div>
+            </div>
+            <div class="article-metadata-author">
+                <a href="{{url_for('users.profile', username=post.author.username)}}">{{post.author.username }}</a>
+            </div>
+            <div class="article-metadata-date">
+                <small class="text-muted">{{ post.posted_on.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
             {% if current_user.admin%}
-            <a href="{{ url_for('main.edit_post', post_id=post.id)}}" class="btn btn-outline-info" role="button">Edit
-                Post</a>
-            <a href="{{ url_for('main.delete_post', post_id=post.id)}}" class="btn btn-outline-danger"
-                role="button">Delete
-                Post</a>
+            <a href="{{ url_for('main.edit_post', post_id=post.id)}}"><i class="fas fa-edit fa-lg text-success"></i></a>
+            <a href="{{ url_for('main.delete_post', post_id=post.id)}}"><i
+                    class="fa-solid fa-trash-can fa-lg text-danger"></i></a>
             {% endif %}
         </div>
-        {% if post.image %}
-        <img src="{{url_for('static', filename='images/posts/' + post.image)}} " alt="" srcset="">
-        {% endif %}
-        <p>{{ post.content | safe }}</p>
+
+        <div class="card article-content">
+            <div class="article-title">
+                <h4 class="card-title"><a class="article-link" href="{{ url_for('main.home', post=post.id) }}">{{
+                        post.title }}</a></h2>
+
+            </div>
+            {% if post.image %}
+            <div class="article-image">
+                <img src="{{url_for('static', filename='images/posts/' + post.image)}} " alt="" srcset="">
+            </div>
+            {% endif %}
+            <div class="article-text">
+                <p>{{ post.content | safe }}</p>
+            </div>
+        </div>
     </div>
 </article>
 {% endfor %}
+
+{% endblock %}
+{%block sidebar_list %}
+{% if current_user.admin%}
+<a href="{{ url_for('main.create_post')}}" class="btn btn-outline-success" role="button">Create New Post</a>
+{% endif %}
 
 {% endblock %}

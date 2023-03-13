@@ -8,24 +8,23 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 
 
-from config import Config
+from config import config
 
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
-login_manager.login_view = 'users.login'
+login_manager.login_view = 'auth.login'
 login_manager.login_message_category = 'info'
-admin = Admin(name='JuliyaNails Admin', template_mode='bootstrap4')
+admin = Admin(name='Admin Panel', template_mode='bootstrap4')
 mail = Mail()
 ckeditor = CKEditor()
 
 
-
-def create_app(config=Config):
+def create_app(config_name):
     app = Flask(__name__)
-    app.config.from_object(config)
+    app.config.from_object(config[config_name])
     db.init_app(app)
     bcrypt.init_app(app)
     migrate.init_app(app, db)
@@ -33,7 +32,7 @@ def create_app(config=Config):
     admin.init_app(app)
     mail.init_app(app)
     ckeditor.init_app(app)
-    
+
     from .main.routes import main, page_not_found
     from .auth.routes import auth
     from .users.routes import users
