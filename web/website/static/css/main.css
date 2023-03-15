@@ -56,6 +56,10 @@
     box-shadow: 0px 0px 5px 5px red;
 }
 
+div .article-text {
+    margin-top: 1.25rem;
+}
+
 .article-text p {
     text-align: justify;
     hyphens: auto;
@@ -68,6 +72,7 @@
     align-items: flex-end;
     justify-content: flex-start;
     gap: 5px;
+    margin-bottom: 3px;
 
 }
 

@@ -21,9 +21,10 @@
                 <small class="text-muted">{{ post.posted_on.strftime('%Y-%m-%d %H:%M') }}</small>
             </div>
             {% if current_user.admin%}
-            <a href="{{ url_for('main.edit_post', post_id=post.id)}}"><i class="fas fa-edit fa-lg text-success"></i></a>
+            <a href="{{ url_for('main.edit_post', post_id=post.id)}}"><i
+                    class="fas fa-edit fa-lg text-success ms-2"></i></a>
             <a href="{{ url_for('main.delete_post', post_id=post.id)}}"><i
-                    class="fa-solid fa-trash-can fa-lg text-danger"></i></a>
+                    class="fa-solid fa-trash-can fa-lg text-danger ms-2"></i></a>
             {% endif %}
         </div>
 

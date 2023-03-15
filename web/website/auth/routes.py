@@ -11,6 +11,7 @@ from .. import db
 
 auth = Blueprint('auth', __name__)
 
+
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
@@ -117,9 +118,9 @@ def password_reset_request():
             subject = 'Reset your password'
             send_email(user.email, subject, template, reset_url=reset_url)
             return redirect(url_for('auth.login'))
-    return render_template('auth/reset_request.html', 
-                           title='Reset Request', 
-                           legend='Password Reset Request', 
+    return render_template('auth/reset_request.html',
+                           title='Reset Request',
+                           legend='Password Reset Request',
                            form=form)
 
 
@@ -139,7 +140,7 @@ def password_reset_token(token):
         else:
             flash('That is an invalid or expired token', 'warning')
             return redirect(url_for('auth.password_reset_request'))
-    return render_template('auth/reset_password.html', 
-                           title='Reset Password', 
-                           legend='Reset Password', 
+    return render_template('auth/reset_password.html',
+                           title='Reset Password',
+                           legend='Reset Password',
                            form=form)

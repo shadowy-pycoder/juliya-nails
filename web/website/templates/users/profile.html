@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block content %}
+{% block main %}
 <section style="background-color: #eee;">
 
     <div class="row">
@@ -14,8 +14,14 @@
                     <p class="text-muted mb-1">Full Stack Developer</p>
                     <p class="text-muted mb-4">Bay Area, San Francisco, CA</p>
                     <div class="d-flex justify-content-center mb-2">
-                        <button type="button" class="btn btn-primary">Follow</button>
-                        <button type="button" class="btn btn-outline-primary ms-1">Message</button>
+                        <!-- <button type="button" class="btn btn-primary">Follow</button> -->
+                        <!-- <button type="button" class="btn btn-outline-primary ms-1">Message</button> -->
+                        <a class="btn btn-primary"
+                            href="{{url_for('users.create_entry', username=current_user.username)}}"
+                            role="button">Create Entry</a>
+                        <a class="btn btn-outline-primary ms-1"
+                            href="{{url_for('users.my_entries', username=current_user.username)}}" role="button">My
+                            Entries</a>
                     </div>
                 </div>
             </div>
@@ -169,4 +175,4 @@
 
     </div>
 </section>
-{% endblock content %}
+{% endblock%}

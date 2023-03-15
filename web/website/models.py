@@ -5,17 +5,24 @@ from flask_admin.contrib.sqla import ModelView
 from flask_login import UserMixin, current_user
 from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, FLOAT
 from sqlalchemy.sql import func
 from wtforms import StringField
-from wtforms.validators import ValidationError
+from wtforms.validators import ValidationError, DataRequired
 
 from . import db, login_manager, admin, bcrypt
 from .utils import save_image, delete_image
 
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(user_id)
+
+
+registrations = db.Table('registrations',
+                         db.Column('entry_id', UUID(as_uuid=True), db.ForeignKey('entries.uuid')),
+                         db.Column('service_id', db.Integer, db.ForeignKey('services.id'))
+                         )
 
 
 class User(UserMixin, db.Model):
@@ -36,7 +43,7 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.registered_on})"
-    
+
     @property
     def password(self):
         raise AttributeError('Password is not a readable attribute')
@@ -100,17 +107,20 @@ class User(UserMixin, db.Model):
         if user is None:
             return False
         return user
-    
+
 
 class Entry(db.Model):
 
     __tablename__ = 'entries'
 
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    name = db.Column(db.String(50), nullable=False)
+    appointment = db.relationship('Service', secondary=registrations,
+                                  backref=db.backref('entries', lazy='dynamic'), lazy='dynamic')
     created_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
-    date_and_time = db.Column(db.DateTime(timezone=True), nullable=False)
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time(timezone=True), nullable=False)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+
 
 class Service(db.Model):
 
@@ -118,6 +128,7 @@ class Service(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True)
+    duration = db.Column(FLOAT(), nullable=False)
 
 
 class Post(db.Model):
@@ -137,20 +148,22 @@ class MyModelView(ModelView):
         if not current_user.is_anonymous and current_user.admin:
             return current_user.is_authenticated
         return abort(404)
-    
+
+
 class UserView(MyModelView):
     column_display_pk = True
     column_display_all_relations = True
     column_hide_backrefs = False
-
     form_excluded_columns = ('password_hash')
 
     form_extra_fields = {
         'new_password': StringField('New Password'),
-        'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])])
+        'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])]),
+        'uuid': StringField('User UUID', validators=[DataRequired()])
     }
 
     form_columns = (
+        'uuid',
         'username',
         'email',
         'new_password',
@@ -161,10 +174,11 @@ class UserView(MyModelView):
         'admin',
     )
     form_widget_args = {
-        'image_file':{
-            'disabled':True
+        'image_file': {
+            'disabled': True
         }
     }
+
     def on_form_prefill(self, form, id):
         self.img = form.image_file.data
 
@@ -181,21 +195,32 @@ class UserView(MyModelView):
                 except FileNotFoundError:
                     pass
             model.image_file = save_image(form.profile_image, path='profiles')
-    
+
     def on_model_delete(self, model: User):
-        try:
-            delete_image(model.image_file, path='profiles')
-        except FileNotFoundError:
-            pass
-        
-        
+        self.img = model.image_file
+
+    def after_model_delete(self, model: User):
+        if self.img != 'default.jpg':
+            try:
+                delete_image(self.img, path='profiles')
+            except FileNotFoundError:
+                pass
+
+    def create_form(self, obj=None):
+        form = super(MyModelView, self).create_form(obj)
+        form.uuid.data = uuid.uuid4()
+        return form
+
+
 class PostView(MyModelView):
     column_display_pk = True
     column_display_all_relations = True
     column_hide_backrefs = False
+    column_list = ('id', 'title', 'posted_on', 'image', 'content', 'author_id')
 
     form_extra_fields = {
-        'new_image': FileField('Upload Post Image', validators=[FileAllowed(['jpg', 'png'])])
+        'new_image': FileField('Upload Post Image', validators=[FileAllowed(['jpg', 'png'])]),
+        'author_id': StringField('Author UUID', validators=[DataRequired()])
     }
 
     form_columns = (
@@ -204,34 +229,54 @@ class PostView(MyModelView):
         'image',
         'new_image',
         'content',
-        'author_id',
+        'author_id'
     )
     form_widget_args = {
-        'image':{
-            'disabled':True
+        'image': {
+            'disabled': True
         }
     }
+
     def on_form_prefill(self, form, id):
         self.img = form.image.data
 
     def on_model_change(self, form, model: Post, is_created):
         if form.new_image.data is not None:
-            try:
-                delete_image(self.img)
-            except FileNotFoundError:
-                pass
+            if not is_created:
+                try:
+                    delete_image(self.img)
+                except (FileNotFoundError, TypeError):
+                    pass
             model.image = save_image(form.new_image)
-
-    def on_model_delete(self, model: Post):
-        if model.image is not None:
+        if form.author_id.data != current_user.uuid:
             try:
-                delete_image(model.image)
-            except FileNotFoundError:
-                pass
+                user = User.query.get(form.author_id.data)
+            except:
+                raise ValidationError('User does not exist')
+            form.author_id.data = user.uuid
 
-    
+    def on_model_delete(self, model: User):
+        self.img = model.image
+
+    def after_model_delete(self, model: User):
+        try:
+            delete_image(self.img)
+        except (FileNotFoundError, TypeError):
+            pass
+
+    def create_form(self, obj=None):
+        form = super(MyModelView, self).create_form(obj)
+        form.author_id.data = current_user.uuid
+        return form
+
+
+class ServiceView(MyModelView):
+    column_display_pk = True
+    column_display_all_relations = True
+    column_hide_backrefs = False
 
 
 admin.add_view(UserView(User, db.session))
 admin.add_view(MyModelView(Entry, db.session))
 admin.add_view(PostView(Post, db.session))
+admin.add_view(ServiceView(Service, db.session))

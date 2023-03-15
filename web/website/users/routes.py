@@ -1,8 +1,8 @@
-from flask import flash, render_template, redirect, url_for, session, Blueprint
+from flask import flash, render_template, redirect, url_for, session, Blueprint, abort
 from flask_login import current_user, login_required
 
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm
-from ..models import User
+from ..models import User, Entry, Service
 from ..utils import send_email, email_confirmed
 from .. import db
 
@@ -31,6 +31,7 @@ def change_password_request():
         flash('Your password has been updated.', 'success')
         return redirect(url_for('users.profile'))
     return render_template('users/change_password.html', title='Change Password', legend='Change Password', form=form)
+
 
 @users.route("/change-email", methods=['GET', 'POST'])
 @login_required
@@ -65,3 +66,39 @@ def change_email(token):
     else:
         flash('That is an invalid or expired token', 'warning')
         return redirect(url_for('users.change_email_request'))
+
+
+@users.route("/profile/<username>/create-entry", methods=['GET', 'POST'])
+@login_required
+@email_confirmed
+def create_entry(username):
+    user = User.query.filter_by(username=username).first_or_404()
+    services = Service.query.all()
+    if username != current_user.username:
+        return abort(404)
+    form = EntryForm()
+    form.services.choices = [service.name for service in services]
+    if form.validate_on_submit():
+        service_types = [
+            Service.query.filter_by(name=service_type).first()
+            for service_type in form.services.data
+        ]
+        entry = Entry(date=form.date.data,
+                      time=form.time.data,
+                      user_id=current_user.uuid)
+        entry.appointment.extend(service_types)
+        db.session.add(entry)
+        db.session.commit()
+        flash('New entry has been created.', 'success')
+        return redirect(url_for('users.profile', username=current_user.username))
+    return render_template('users/create_entry.html', title='Profile', form=form, user=user)
+
+
+@users.route("/profile/<username>/my-entries", methods=['GET', 'POST'])
+@login_required
+@email_confirmed
+def my_entries(username):
+    if username != current_user.username:
+        return abort(404)
+    entries = current_user.entries.all()
+    return render_template('users/my_entries.html', title='Profile', entries=entries)
