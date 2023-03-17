@@ -127,8 +127,11 @@ class Service(db.Model):
     __tablename__ = 'services'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
     duration = db.Column(FLOAT(), nullable=False)
+
+    def __repr__(self):
+        return self.name
 
 
 class Post(db.Model):
@@ -155,11 +158,21 @@ class UserView(MyModelView):
     column_display_all_relations = True
     column_hide_backrefs = False
     form_excluded_columns = ('password_hash')
+    column_list = ('uuid',
+                   'username',
+                   'email',
+                   'password_hash',
+                   'image_file',
+                   'confirmed',
+                   'confirmed_on',
+                   'admin',
+                   'posts2')
 
     form_extra_fields = {
         'new_password': StringField('New Password'),
         'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])]),
-        'uuid': StringField('User UUID', validators=[DataRequired()])
+        'uuid': StringField('User UUID', validators=[DataRequired()]),
+        'posts': StringField('User posts')
     }
 
     form_columns = (
@@ -172,6 +185,7 @@ class UserView(MyModelView):
         'confirmed',
         'confirmed_on',
         'admin',
+        'posts',
     )
     form_widget_args = {
         'image_file': {
@@ -181,6 +195,7 @@ class UserView(MyModelView):
 
     def on_form_prefill(self, form, id):
         self.img = form.image_file.data
+        form.posts.data = self.model.query.get(id).posts.all()
 
     def on_model_change(self, form, model: User, is_created):
         if form.new_password.data != '':
@@ -216,7 +231,7 @@ class PostView(MyModelView):
     column_display_pk = True
     column_display_all_relations = True
     column_hide_backrefs = False
-    column_list = ('id', 'title', 'posted_on', 'image', 'content', 'author_id')
+    column_list = ('id', 'title', 'posted_on', 'image', 'content', 'author_id', 'author')
 
     form_extra_fields = {
         'new_image': FileField('Upload Post Image', validators=[FileAllowed(['jpg', 'png'])]),
@@ -274,9 +289,17 @@ class ServiceView(MyModelView):
     column_display_pk = True
     column_display_all_relations = True
     column_hide_backrefs = False
+    column_list = ('id', 'name', 'duration')
+
+
+class EntryView(MyModelView):
+    column_display_pk = True
+    column_display_all_relations = True
+    column_hide_backrefs = False
+    column_list = ('uuid', 'created_on', 'date', 'time', 'user_id', 'user.username')
 
 
 admin.add_view(UserView(User, db.session))
-admin.add_view(MyModelView(Entry, db.session))
+admin.add_view(EntryView(Entry, db.session))
 admin.add_view(PostView(Post, db.session))
 admin.add_view(ServiceView(Service, db.session))
