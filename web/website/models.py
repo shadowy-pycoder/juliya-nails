@@ -19,10 +19,10 @@ def load_user(user_id):
     return User.query.get(user_id)
 
 
-registrations = db.Table('registrations',
-                         db.Column('entry_id', UUID(as_uuid=True), db.ForeignKey('entries.uuid')),
-                         db.Column('service_id', db.Integer, db.ForeignKey('services.id'))
-                         )
+association_table = db.Table('association_table',
+                             db.Column('entry_id', UUID(as_uuid=True), db.ForeignKey('entries.uuid')),
+                             db.Column('service_id', db.Integer, db.ForeignKey('services.id'))
+                             )
 
 
 class User(UserMixin, db.Model):
@@ -38,11 +38,12 @@ class User(UserMixin, db.Model):
     confirmed = db.Column(db.Boolean, nullable=False, default=False)
     confirmed_on = db.Column(db.DateTime(timezone=True), nullable=True)
     admin = db.Column(db.Boolean, nullable=False, default=False)
-    entries = db.relationship('Entry', backref='user', lazy='dynamic')
-    posts = db.relationship('Post', backref='author', lazy='dynamic')
+    entries = db.relationship('Entry', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
+    posts = db.relationship('Post', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
+    socials = db.relationship('SocialMedia', back_populates='user', lazy='joined', cascade="all, delete-orphan")
 
     def __repr__(self):
-        return f"User('{self.username}', '{self.email}', '{self.image_file}', '{self.registered_on})"
+        return f"User('{self.username}', '{self.email}')"
 
     @property
     def password(self):
@@ -109,29 +110,33 @@ class User(UserMixin, db.Model):
         return user
 
 
-class Entry(db.Model):
+class SocialMedia(db.Model):
 
-    __tablename__ = 'entries'
+    __tablename__ = 'socials'
 
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    appointment = db.relationship('Service', secondary=registrations,
-                                  backref=db.backref('entries', lazy='dynamic'), lazy='dynamic')
-    created_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
-    date = db.Column(db.Date, nullable=False)
-    time = db.Column(db.Time(timezone=True), nullable=False)
+    phone_number = db.Column(db.String(50), unique=True, nullable=True)
+    viber = db.Column(db.String(50), unique=True, nullable=True)
+    whatsapp = db.Column(db.String(50), unique=True, nullable=True)
+    instagram = db.Column(db.String(255), unique=True, nullable=True)
+    telegram = db.Column(db.String(255), unique=True, nullable=True)
+    youtube = db.Column(db.String(255), unique=True, nullable=True)
+    website = db.Column(db.String(255), unique=True, nullable=True)
+    vk = db.Column(db.String(255), unique=True)
+    about = db.Column(db.String(255), nullable=True)
     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-
-
-class Service(db.Model):
-
-    __tablename__ = 'services'
-
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), unique=True, nullable=False)
-    duration = db.Column(FLOAT(), nullable=False)
+    user = db.relationship('User', back_populates='socials', lazy='select')
+    first_name = db.Column(db.String(50), nullable=True)
+    last_name = db.Column(db.String(50), nullable=True)
 
     def __repr__(self):
-        return self.name
+        items = {}
+        for item in vars(__class__):
+            if not item.startswith('_') and item not in ['uuid', 'user_id']:
+                val = getattr(self, item)
+                if val is not None:
+                    items[item] = val
+        return ', '.join(f'{item}: {val}' for item, val in items.items())
 
 
 class Post(db.Model):
@@ -144,20 +149,57 @@ class Post(db.Model):
     image = db.Column(db.String(20))
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+    author = db.relationship('User', back_populates='posts', lazy='select')
+
+    def __repr__(self):
+        return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
 
 
-class MyModelView(ModelView):
+class Entry(db.Model):
+
+    __tablename__ = 'entries'
+
+    uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    services = db.relationship('Service', secondary=association_table, back_populates='entries', lazy='select')
+    created_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
+    date = db.Column(db.Date, nullable=False)
+    time = db.Column(db.Time(timezone=True), nullable=False)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+    user = db.relationship('User', back_populates='entries', lazy='select')
+
+    def __repr__(self):
+        return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
+
+
+class Service(db.Model):
+
+    __tablename__ = 'services'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    duration = db.Column(FLOAT(), nullable=False)
+    entries = db.relationship('Entry', secondary=association_table, back_populates='services', lazy='dynamic')
+
+    def __repr__(self):
+        return self.name
+
+
+class AdminView(ModelView):
+    column_display_pk = True
+    column_display_all_relations = True
+    column_hide_backrefs = False
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.static_folder = 'static'
+
     def is_accessible(self):
         if not current_user.is_anonymous and current_user.admin:
             return current_user.is_authenticated
         return abort(404)
 
 
-class UserView(MyModelView):
-    column_display_pk = True
-    column_display_all_relations = True
-    column_hide_backrefs = False
-    form_excluded_columns = ('password_hash')
+class UserView(AdminView):
     column_list = ('uuid',
                    'username',
                    'email',
@@ -166,17 +208,19 @@ class UserView(MyModelView):
                    'confirmed',
                    'confirmed_on',
                    'admin',
-                   'posts2')
+                   'socials'
+                   )
+    column_searchable_list = ('username', 'email')
+    column_default_sort = ('admin', True)
+
+    form_excluded_columns = ('password_hash')
 
     form_extra_fields = {
         'new_password': StringField('New Password'),
         'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])]),
-        'uuid': StringField('User UUID', validators=[DataRequired()]),
-        'posts': StringField('User posts')
     }
 
     form_columns = (
-        'uuid',
         'username',
         'email',
         'new_password',
@@ -185,6 +229,7 @@ class UserView(MyModelView):
         'confirmed',
         'confirmed_on',
         'admin',
+        'entries',
         'posts',
     )
     form_widget_args = {
@@ -195,12 +240,11 @@ class UserView(MyModelView):
 
     def on_form_prefill(self, form, id):
         self.img = form.image_file.data
-        form.posts.data = self.model.query.get(id).posts.all()
 
     def on_model_change(self, form, model: User, is_created):
         if form.new_password.data != '':
             model.password = form.new_password.data
-        elif is_created:
+        elif is_created and form.new_password.data == '':
             raise ValidationError('Password must not be empty.')
 
         if form.profile_image.data is not None:
@@ -221,21 +265,14 @@ class UserView(MyModelView):
             except FileNotFoundError:
                 pass
 
-    def create_form(self, obj=None):
-        form = super(MyModelView, self).create_form(obj)
-        form.uuid.data = uuid.uuid4()
-        return form
 
-
-class PostView(MyModelView):
-    column_display_pk = True
-    column_display_all_relations = True
-    column_hide_backrefs = False
-    column_list = ('id', 'title', 'posted_on', 'image', 'content', 'author_id', 'author')
+class PostView(AdminView):
+    column_list = ('id', 'title', 'posted_on', 'image', 'content', 'author_id', 'author.username')
+    column_searchable_list = ('author.username', 'content',)
+    column_default_sort = ('posted_on', True)
 
     form_extra_fields = {
         'new_image': FileField('Upload Post Image', validators=[FileAllowed(['jpg', 'png'])]),
-        'author_id': StringField('Author UUID', validators=[DataRequired()])
     }
 
     form_columns = (
@@ -244,7 +281,9 @@ class PostView(MyModelView):
         'image',
         'new_image',
         'content',
-        'author_id'
+        'author_id',
+        'author',
+
     )
     form_widget_args = {
         'image': {
@@ -263,43 +302,37 @@ class PostView(MyModelView):
                 except (FileNotFoundError, TypeError):
                     pass
             model.image = save_image(form.new_image)
-        if form.author_id.data != current_user.uuid:
-            try:
-                user = User.query.get(form.author_id.data)
-            except:
-                raise ValidationError('User does not exist')
-            form.author_id.data = user.uuid
 
-    def on_model_delete(self, model: User):
+    def on_model_delete(self, model: Post):
         self.img = model.image
 
-    def after_model_delete(self, model: User):
+    def after_model_delete(self, model: Post):
         try:
             delete_image(self.img)
         except (FileNotFoundError, TypeError):
             pass
 
-    def create_form(self, obj=None):
-        form = super(MyModelView, self).create_form(obj)
-        form.author_id.data = current_user.uuid
-        return form
+
+class ServiceView(AdminView):
+    column_list = ('id', 'name', 'duration',)
+    column_editable_list = ('name', 'duration')
 
 
-class ServiceView(MyModelView):
-    column_display_pk = True
-    column_display_all_relations = True
-    column_hide_backrefs = False
-    column_list = ('id', 'name', 'duration')
+class EntryView(AdminView):
+    column_list = ('uuid', 'created_on', 'date', 'time', 'user_id', 'user.username', 'services')
+    column_searchable_list = ('user.username',)
+    column_default_sort = ('date', True)
 
 
-class EntryView(MyModelView):
-    column_display_pk = True
-    column_display_all_relations = True
-    column_hide_backrefs = False
-    column_list = ('uuid', 'created_on', 'date', 'time', 'user_id', 'user.username')
+class SocialMediaView(AdminView):
+    column_searchable_list = ('phone_number',)
+    column_default_sort = ('phone_number', True)
+    column_editable_list = ('phone_number', 'viber', 'whatsapp', 'instagram',
+                            'telegram', 'youtube', 'website', 'vk', 'about', 'first_name', 'last_name')
 
 
 admin.add_view(UserView(User, db.session))
 admin.add_view(EntryView(Entry, db.session))
 admin.add_view(PostView(Post, db.session))
 admin.add_view(ServiceView(Service, db.session))
+admin.add_view(SocialMediaView(SocialMedia, db.session))

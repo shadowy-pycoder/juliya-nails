@@ -22,6 +22,7 @@ itsdangerous = "^2.1.2"
 flask-ckeditor = "^0.4.6"
 flask-uploads = "^0.2.1"
 pillow = "^9.4.0"
+phonenumbers = "^8.13.7"
 
 
 [tool.poetry.group.dev.dependencies]

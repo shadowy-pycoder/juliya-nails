@@ -10,7 +10,6 @@ from flask_sqlalchemy import SQLAlchemy
 
 from config import config
 
-
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 migrate = Migrate()
@@ -36,6 +35,7 @@ def create_app(config_name):
     from .main.routes import main, page_not_found
     from .auth.routes import auth
     from .users.routes import users
+
     app.register_blueprint(main, url_prefix='/')
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(users, url_prefix='/users')

@@ -1,9 +1,11 @@
-from flask_admin.form import DateTimePickerWidget
+from flask_login import current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectMultipleField, DateField, TimeField, DateTimeLocalField
-from wtforms.validators import DataRequired, Length, Email, EqualTo
+from wtforms import (StringField, PasswordField, SubmitField, SelectMultipleField, DateField, TimeField,
+                     URLField, TextAreaField)
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Regexp, Optional
 
-from ..auth.forms import CustomValidatorsMixin
+from ..auth.forms import CustomValidatorsMixin, IntegrityCheck
+from ..models import User
 
 
 class PasswordChangeForm(CustomValidatorsMixin, FlaskForm):
@@ -17,7 +19,7 @@ class PasswordChangeForm(CustomValidatorsMixin, FlaskForm):
 class EmailChangeForm(CustomValidatorsMixin, FlaskForm):
 
     email = StringField('New Email',
-                        validators=[DataRequired(), Email(), Length(max=100)])
+                        validators=[DataRequired(), Email(), Length(max=100), IntegrityCheck(model=User)])
     old_password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Update Email')
 
@@ -29,3 +31,30 @@ class EntryForm(CustomValidatorsMixin, FlaskForm):
     date = DateField('local', validators=[DataRequired()], id='datepicker')
     time = TimeField('Time', validators=[DataRequired()], id='timepicker')
     submit = SubmitField('Update Email')
+
+
+class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
+    youtube = URLField('Youtube',
+                       validators=[Optional(), Length(max=255), Regexp('(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?',
+                                                                       message='Please enter a valid YouTube link'), IntegrityCheck()],
+                       render_kw={"placeholder": "https://www.youtube.com/channel/"})
+    website = URLField('Website', validators=[Optional(), Length(max=255), IntegrityCheck()],
+                       render_kw={"placeholder": "https://www.example.com/"})
+    vk = URLField('VK',
+                  validators=[Optional(), Length(max=255), Regexp('(https?:\/\/|https:\/\/)?(www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+',
+                                                                  message='Please enter a valid VK link'), IntegrityCheck()],
+                  render_kw={"placeholder": "https://vk.com/example"})
+    telegram = URLField('Telegram',
+                        validators=[Optional(), Length(max=255), Regexp('(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
+                                                                        message='Please enter a valid Telegram link'), IntegrityCheck()],
+                        render_kw={"placeholder": "https://t.me/example"})
+    instagram = URLField('Instagram',
+                         validators=[Optional(), Length(max=255), Regexp('(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
+                                                                         message='Please enter a valid Instagram link'), IntegrityCheck()],
+                         render_kw={"placeholder": "https://instagram.com/username"})
+    about = TextAreaField('About', validators=[Optional(), Length(max=255)],
+                          render_kw={"placeholder": "Enter information about you"})
+    phone_number = StringField('Phone', id='phone', validators=[Optional(), IntegrityCheck()])
+    viber = StringField('Viber', id='viber', validators=[Optional(), IntegrityCheck()])
+    whatsapp = StringField('WhatsApp', id='whatsapp', validators=[Optional(), IntegrityCheck()])
+    submit = SubmitField('Update Profile')

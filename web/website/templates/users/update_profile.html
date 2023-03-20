@@ -1,0 +1,27 @@
+{% extends "layout.html" %}
+{% from "_form_macro.html" import render_icon_field, render_field %}
+
+{% block content %}
+<div class="content-section">
+    <form method="POST" action="">
+        {{ form.hidden_tag() }}
+        <fieldset class="form-group" id="update-form">
+            <legend class="border-bottom mb-4">{{ legend }}</legend>
+            {{ render_icon_field(form.youtube, "fa-brands fa-youtube fa-lg text-danger") }}
+            {{ render_icon_field(form.website, "fas fa-globe fa-lg text-warning") }}
+            {{ render_icon_field(form.vk, "fab fa-vk fa-lg text-primary") }}
+            {{ render_icon_field(form.telegram, "fa-brands fa-telegram fa-lg text-primary") }}
+            {{ render_icon_field(form.instagram, "fa-brands fa-instagram fa-lg text-warning") }}
+            {{ render_field(form.about) }}
+            {{ render_field(form.phone_number, 'phone') }}
+            {{ render_field(form.viber, 'viber') }}
+            {{ render_field(form.whatsapp, 'whatsapp') }}
+        </fieldset>
+        <div class="form-group">
+            {{ form.submit(class="btn btn-outline-info") }}
+        </div>
+    </form>
+
+
+</div>
+{% endblock content %}

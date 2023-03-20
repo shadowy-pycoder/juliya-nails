@@ -88,3 +88,13 @@ div .article-text {
 .article-link {
     text-decoration: none;
 }
+
+.iti {
+    width: 100%;
+}
+
+.offscreen {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+}

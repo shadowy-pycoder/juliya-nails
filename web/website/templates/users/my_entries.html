@@ -4,7 +4,7 @@
 <ul>
     <li>{{entry.uuid}}</li>
     <ul>
-        {% for service in entry.appointment.all() %}
+        {% for service in entry.services %}
 
         <li>{{service.name}}</li>
         {%endfor%}
@@ -15,6 +15,14 @@
     <li>{{entry.user_id}}</li>
 </ul>
 {% endfor %}
+<ul>
+    {% for service in services %}
+    <li>{% for entry in service.entries.all() %}</li>
+    {{entry.user}}
+    {{service.entries.all()}}
+    {% endfor %}
+    {% endfor %}
+</ul>
 
 
 {% endblock content %}

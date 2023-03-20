@@ -22,6 +22,9 @@
                         <a class="btn btn-outline-primary ms-1"
                             href="{{url_for('users.my_entries', username=current_user.username)}}" role="button">My
                             Entries</a>
+                        <a class="btn btn-outline-success ms-1"
+                            href="{{url_for('users.update_profile', username=current_user.username)}}"
+                            role="button">Update Profile</a>
                     </div>
                 </div>
             </div>

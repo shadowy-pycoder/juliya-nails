@@ -5,7 +5,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
-from ..models import User
+from ..models import User, SocialMedia
 from ..utils import send_email
 from .. import db
 
@@ -38,6 +38,9 @@ def register():
         subject = "Please confirm your email"
         send_email(user.email, subject, template, confirm_url=confirm_url)
         login_user(user)
+        socials = SocialMedia(user_id=current_user.uuid)
+        db.session.add(socials)
+        db.session.commit()
         flash(f'A confirmation email has been sent to {user.email}.', 'info')
         return redirect(url_for("auth.unconfirmed"))
     return render_template('auth/register.html', title='Register', legend='Register', form=form)

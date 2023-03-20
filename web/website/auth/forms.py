@@ -1,12 +1,14 @@
 import re
 
+import phonenumbers
 from flask_login import current_user
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, BooleanField
+from wtforms import StringField, PasswordField, SubmitField, BooleanField, Field
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Regexp
 
-from ..models import User
+from ..models import User, SocialMedia
 from .. import bcrypt
+
 
 class CustomValidatorsMixin:
 
@@ -24,37 +26,60 @@ class CustomValidatorsMixin:
                 error_log.append(err_msg)
         if error_log:
             raise ValidationError(message + ', '.join(err for err in error_log))
-            
+
     def validate_old_password(self, old_password: FlaskForm):
         if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):
             raise ValidationError('Entered password is incorrect. Please try again')
-    
+
     def validate_new_password(self, new_password: FlaskForm):
         self.validate_password(new_password)
         if new_password.data == self.old_password.data:
             raise ValidationError('Your new password must be different from your old password.')
-        
-            
-    def validate_username(self, username: FlaskForm):
-        user = User.query.filter_by(username=username.data).first()
-        if user:
-            raise ValidationError('That username is taken. Please choose a different one.')
 
-    def validate_email(self, email: FlaskForm):
-        user = User.query.filter_by(email=email.data).first()
-        if user:
-            raise ValidationError('That email is taken. Please choose a different one.')
+    def validate_phone_number(self, phone_number):
+        try:
+            p = phonenumbers.parse(phone_number.data)
+            if not phonenumbers.is_valid_number(p):
+                raise ValueError()
+        except (phonenumbers.phonenumberutil.NumberParseException, ValueError):
+            raise ValidationError('Invalid phone number')
+
+    def validate_viber(self, viber):
+        self.validate_phone_number(viber)
+
+    def validate_whatsapp(self, whatsapp):
+        self.validate_phone_number(whatsapp)
+
+
+class IntegrityCheck:
+    def __init__(self, message=None, model=SocialMedia):
+        if not message:
+            message = 'Already exists. Please choose a different one.'
+        self.message = message
+        self.model = model
+
+    def __call__(self, form: FlaskForm, field: Field):
+        params = {field.name: field.data}
+        query = self.model.query.filter_by(**params).first()
+        if self.model == SocialMedia:
+            if query and query.user_id != current_user.uuid:
+                raise ValidationError(self.message)
+        elif self.model == User:
+            if query:
+                raise ValidationError(self.message)
+
 
 class RegistrationForm(CustomValidatorsMixin, FlaskForm):
 
     username = StringField(
         'Username', validators=[
-        DataRequired(), 
-        Length(min=2, max=20), 
-        Regexp('^[A-Za-z][A-Za-z0-9_.]*$', 
-               message='Usernames must have only letters, numbers, dots or underscores')])
+            DataRequired(),
+            Length(min=2, max=20),
+            Regexp('^[A-Za-z][A-Za-z0-9_.]*$',
+                   message='Usernames must have only letters, numbers, dots or underscores'),
+            IntegrityCheck(model=User)])
     email = StringField('Email',
-                        validators=[DataRequired(), Email(), Length(max=100)])
+                        validators=[DataRequired(), Email(), Length(max=100), IntegrityCheck(model=User)])
     password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
     confirm_password = PasswordField('Confirm Password',
                                      validators=[DataRequired(), EqualTo('password')])
@@ -80,4 +105,3 @@ class PasswordResetForm(CustomValidatorsMixin, FlaskForm):
     confirm_password = PasswordField('Confirm New Password',
                                      validators=[DataRequired(), EqualTo('password')])
     submit = SubmitField('Reset Password')
-

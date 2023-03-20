@@ -51,6 +51,15 @@ def admin_required(func):
     return decorated_function
 
 
+def current_user_required(func):
+    @wraps(func)
+    def decorated_function(username):
+        if username != current_user.username:
+            return redirect(url_for(f'users.{func.__name__}', username=current_user.username))
+        return func(username)
+    return decorated_function
+
+
 def save_image(file: FileField, path='posts'):
     _, f_ext = os.path.splitext(file.data.filename)
     filename = secrets.token_hex(8) + f_ext

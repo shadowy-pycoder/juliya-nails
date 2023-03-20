@@ -17,8 +17,8 @@
             {% endif %}
         </div>
     </div>
-    <a href="{{ url_for('users.change_email_request') }}">Change Email Address</a>
-    <a href="{{ url_for('users.change_password_request') }}">Change Password</a>
+    <a href="{{ url_for('users.change_email_request', username=current_user.username) }}">Change Email Address</a>
+    <a href="{{ url_for('users.change_password_request', username=current_user.username) }}">Change Password</a>
 
     <div class="content-section">
 
