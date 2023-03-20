@@ -54,7 +54,11 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                          render_kw={"placeholder": "https://instagram.com/username"})
     about = TextAreaField('About', validators=[Optional(), Length(max=255)],
                           render_kw={"placeholder": "Enter information about you"})
-    phone_number = StringField('Phone', id='phone', validators=[Optional(), IntegrityCheck()])
-    viber = StringField('Viber', id='viber', validators=[Optional(), IntegrityCheck()])
-    whatsapp = StringField('WhatsApp', id='whatsapp', validators=[Optional(), IntegrityCheck()])
+    phone_number = StringField('Phone', id='phone', validators=[Optional(), Length(max=50), IntegrityCheck()])
+    viber = StringField('Viber', id='viber', validators=[Optional(), Length(max=50), IntegrityCheck()])
+    whatsapp = StringField('WhatsApp', id='whatsapp', validators=[Optional(), Length(max=50), IntegrityCheck()])
+    first_name = StringField('First Name', validators=[Optional(), Length(max=50)],
+                             render_kw={"placeholder": "Enter first name"})
+    last_name = StringField('Last Name', validators=[Optional(), Length(max=50)],
+                            render_kw={"placeholder": "Enter last name"})
     submit = SubmitField('Update Profile')

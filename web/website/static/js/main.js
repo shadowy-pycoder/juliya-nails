@@ -39,7 +39,7 @@ function setPhoneField(elID) {
     wtf_phone_field.parentElement.insertAdjacentHTML('beforebegin', `<div><input type="tel" id="_${elID}"></div>`);
     const fancy_phone_field = document.querySelector(`#_${elID}`);
     fancy_phone_field.classList.add('form-control');
-    const fieldParent = document.querySelector(`.${elID}`);
+    const fieldParent = document.querySelector(`div[name=${elID}]`);
     const fieldSet = document.querySelector('#update-form');
     fieldSet.appendChild(fieldParent);
     const fancy_phone_iti = window.intlTelInput(fancy_phone_field, {

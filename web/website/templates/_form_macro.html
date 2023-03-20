@@ -22,7 +22,7 @@
 {% endmacro %}
 
 {% macro render_field(field, extras="") %}
-<div class="form-group {{ extras }}">
+<div class="form-group" name="{{ extras }}">
     {{ field.label(class="form-control-label") }}
     {% if field.errors %}
     <div class="input-group">
@@ -38,7 +38,6 @@
         {{ field(class="form-control") }}
     </div>
     {% endif %}
-</div>
 </div>
 
 {% endmacro %}
