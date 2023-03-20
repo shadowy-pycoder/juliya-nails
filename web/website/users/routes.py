@@ -43,7 +43,7 @@ def change_password_request(username):
 def change_email_request(username):
     form = EmailChangeForm()
     if form.validate_on_submit():
-        session['new_email'] = form.email.data
+        session['new_email'] = form.email.data.lower()
         token = current_user.generate_token(context='change', salt_context='change-email')
         change_url = url_for('users.change_email', username=username, token=token, _external=True)
         template = 'users/email/change_email'

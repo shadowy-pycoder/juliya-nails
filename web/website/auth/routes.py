@@ -26,7 +26,7 @@ def register():
     if form.validate_on_submit():
         user = User(
             username=form.username.data,
-            email=form.email.data,
+            email=form.email.data.lower(),
             password=form.password.data,
             confirmed=False,
         )
@@ -52,7 +52,7 @@ def login():
         return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user: User = User.query.filter_by(email=form.email.data).first()
+        user: User = User.query.filter_by(email=form.email.data.lower()).first()
         if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
@@ -111,7 +111,7 @@ def password_reset_request():
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
         flash('An email with instructions to reset your password has been sent.', 'info')
-        user: User = User.query.filter_by(email=form.email.data.lower().strip()).first()
+        user: User = User.query.filter_by(email=form.email.data.lower()).first()
         if user:
             token = user.generate_token(
                 context='reset',
