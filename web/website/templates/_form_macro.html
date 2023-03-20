@@ -21,8 +21,8 @@
 
 {% endmacro %}
 
-{% macro render_field(field, extras="") %}
-<div class="form-group" name="{{ extras }}">
+{% macro render_field(field) %}
+<div class="form-group">
     {{ field.label(class="form-control-label") }}
     {% if field.errors %}
     <div class="input-group">
