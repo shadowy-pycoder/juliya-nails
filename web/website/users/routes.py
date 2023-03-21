@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from flask import flash, render_template, redirect, url_for, session, Blueprint, request
 from flask_login import current_user, login_required
 
@@ -119,7 +121,11 @@ def update_profile(username):
     if form.validate_on_submit():
         for field in form._fields.values():
             if field.name not in ['submit', 'csrf_token']:
-                if not field.data:
+                if field.data and field.name in ['instagram', 'telegram', 'vk']:
+                    field.data = field.data.lower()
+                elif field.data and field.name in ['first_name', 'last_name']:
+                    field.data = field.data.capitalize()
+                elif not field.data:
                     field.data = None
                 setattr(socials, field.name, field.data)
         db.session.commit()

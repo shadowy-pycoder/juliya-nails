@@ -13,8 +13,7 @@ from .. import bcrypt
 class CustomValidatorsMixin:
 
     def validate_password(self, password: FlaskForm):
-        message = 'Password should contain at least '
-        error_log = []
+        message = 'Please add at least '
         errors = {
             '1 digit': re.search(r'\d', password.data) is None,
             '1 uppercase letter': re.search(r'[A-Z]', password.data) is None,
@@ -23,9 +22,7 @@ class CustomValidatorsMixin:
         }
         for err_msg, error in errors.items():
             if error:
-                error_log.append(err_msg)
-        if error_log:
-            raise ValidationError(message + ', '.join(err for err in error_log))
+                self.password.errors.append(message + err_msg)
 
     def validate_old_password(self, old_password: FlaskForm):
         if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):

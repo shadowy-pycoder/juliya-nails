@@ -1,4 +1,3 @@
-from flask_login import current_user
 from flask_wtf import FlaskForm
 from wtforms import (StringField, PasswordField, SubmitField, SelectMultipleField, DateField, TimeField,
                      URLField, TextAreaField)
@@ -35,7 +34,7 @@ class EntryForm(CustomValidatorsMixin, FlaskForm):
 
 class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
     youtube = URLField('Youtube',
-                       validators=[Optional(), Length(max=255), Regexp('(?:https?:\/\/)?(?:www\.)?youtu\.?be(?:\.com)?\/?.*(?:watch|embed)?(?:.*v=|v\/|\/)([\w\-_]+)\&?',
+                       validators=[Optional(), Length(max=255), Regexp('(https?:\/\/)?(www\.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
                                                                        message='Please enter a valid YouTube link'), IntegrityCheck()],
                        render_kw={"placeholder": "https://www.youtube.com/channel/"})
     website = URLField('Website', validators=[Optional(), Length(max=255), IntegrityCheck()],
@@ -43,11 +42,11 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
     vk = URLField('VK',
                   validators=[Optional(), Length(max=255), Regexp('(https?:\/\/|https:\/\/)?(www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+',
                                                                   message='Please enter a valid VK link'), IntegrityCheck()],
-                  render_kw={"placeholder": "https://vk.com/example"})
+                  render_kw={"placeholder": "https://vk.com/username"})
     telegram = URLField('Telegram',
                         validators=[Optional(), Length(max=255), Regexp('(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
                                                                         message='Please enter a valid Telegram link'), IntegrityCheck()],
-                        render_kw={"placeholder": "https://t.me/example"})
+                        render_kw={"placeholder": "https://t.me/username"})
     instagram = URLField('Instagram',
                          validators=[Optional(), Length(max=255), Regexp('(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
                                                                          message='Please enter a valid Instagram link'), IntegrityCheck()],

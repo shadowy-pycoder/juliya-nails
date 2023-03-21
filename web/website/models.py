@@ -2,6 +2,7 @@ import uuid
 
 from flask import abort, current_app
 from flask_admin.contrib.sqla import ModelView
+from flask_admin.form import SecureForm
 from flask_login import UserMixin, current_user
 from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
@@ -188,6 +189,7 @@ class AdminView(ModelView):
     column_display_pk = True
     column_display_all_relations = True
     column_hide_backrefs = False
+    form_base_class = SecureForm
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

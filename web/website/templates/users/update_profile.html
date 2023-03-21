@@ -7,13 +7,13 @@
         {{ form.hidden_tag() }}
         <fieldset class="form-group" id="update-form">
             <legend class="border-bottom mb-4">{{ legend }}</legend>
-            {{ render_field(form.first_name) }}
-            {{ render_field(form.last_name) }}
-            {{ render_icon_field(form.youtube, "fa-brands fa-youtube fa-lg text-danger") }}
-            {{ render_icon_field(form.website, "fas fa-globe fa-lg text-warning") }}
-            {{ render_icon_field(form.vk, "fab fa-vk fa-lg text-primary") }}
-            {{ render_icon_field(form.telegram, "fa-brands fa-telegram fa-lg text-primary") }}
-            {{ render_icon_field(form.instagram, "fa-brands fa-instagram fa-lg text-warning") }}
+            {{ render_icon_field(form.first_name, "fas fa-id-card fa-xl text-primary") }}
+            {{ render_icon_field(form.last_name, "fas fa-id-card fa-xl text-primary") }}
+            {{ render_icon_field(form.youtube, "fa-brands fa-youtube fa-xl text-danger") }}
+            {{ render_icon_field(form.website, "fas fa-globe fa-xl text-warning") }}
+            {{ render_icon_field(form.vk, "fab fa-vk fa-xl text-primary") }}
+            {{ render_icon_field(form.telegram, "fa-brands fa-telegram fa-xl text-primary") }}
+            {{ render_icon_field(form.instagram, "fa-brands fa-instagram fa-xl text-warning") }}
             {{ render_field(form.about) }}
             {{ render_field(form.phone_number) }}
             {{ render_field(form.viber) }}
@@ -23,7 +23,5 @@
             {{ form.submit(class="btn btn-outline-info") }}
         </div>
     </form>
-
-
 </div>
 {% endblock content %}
