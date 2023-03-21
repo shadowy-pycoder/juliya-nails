@@ -29,13 +29,11 @@ def profile(username):
         formatted_number = phonenumbers.format_number(p, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
         form[item] = formatted_number
     for item in ['vk', 'telegram', 'instagram']:
+        form[item] = None
         url = getattr(socials, item)
         if url:
             parsed = urlparse(url=url)
             form[item] = parsed.path.strip('/')
-        else:
-            form[item] = None
-
     return render_template('users/profile.html', title='Profile', socials=socials, user=user, form=form)
 
 

@@ -56,12 +56,12 @@ class IntegrityCheck:
         self.model = model
 
     def __call__(self, form: FlaskForm, field: Field):
-        params = {field.name: field.data}
-        query = self.model.query.filter_by(**params).first()
         if self.model == SocialMedia:
+            query = self.model.query.filter_by(**{field.name: field.data}).first()
             if query and query.user_id != current_user.uuid:
                 raise ValidationError(self.message)
         elif self.model == User:
+            query = self.model.query.filter(self.model.username.ilike(f'%{field.data}%')).first()
             if query:
                 raise ValidationError(self.message)
 

@@ -25,6 +25,12 @@
                         <a class="btn btn-outline-success ms-1"
                             href="{{url_for('users.update_profile', username=current_user.username)}}"
                             role="button">Update Profile</a>
+                        <a class="btn btn-outline-success ms-1"
+                            href="{{ url_for('users.change_password_request', username=current_user.username) }}"
+                            role="button">Change Password</a>
+                        <a class="btn btn-outline-success ms-1"
+                            href="{{ url_for('users.change_email_request', username=current_user.username) }}"
+                            role="button">Change Email</a>
                     </div>
                 </div>
             </div>
@@ -45,7 +51,7 @@
                                 <p>VK</p>
                             </div>
                             <p class="mb-0">{%if form.vk%}<a
-                                    href="{{socials.vk}}">@{{form.vk}}</a>{%else%}&nbsp;{%endif%}</p>
+                                    href="{{socials.vk}}">{{form.vk}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                             <div>
