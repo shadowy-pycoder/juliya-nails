@@ -2,6 +2,7 @@ from urllib.parse import urlparse
 
 from flask import flash, render_template, redirect, url_for, session, Blueprint, request
 from flask_login import current_user, login_required
+import phonenumbers
 
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
 from ..models import User, Entry, Service, SocialMedia
@@ -12,13 +13,30 @@ from .. import db
 users = Blueprint('users', __name__)
 
 
-@users.route("/profile/<username>", methods=['GET', 'POST'])
+@users.route("/profile/<username>", methods=['GET'])
 @login_required
 @email_confirmed
 def profile(username):
     user = User.query.filter_by(username=username).first_or_404()
-    form = EntryForm()
-    return render_template('users/profile.html', title='Profile', form=form, user=user)
+    socials: SocialMedia = SocialMedia.query.filter_by(user_id=user.uuid).first()
+    form = {}
+    for item in ['phone_number', 'viber', 'whatsapp']:
+        try:
+            p = phonenumbers.parse(getattr(socials, item))
+        except phonenumbers.phonenumberutil.NumberParseException:
+            form[item] = None
+            continue
+        formatted_number = phonenumbers.format_number(p, phonenumbers.PhoneNumberFormat.INTERNATIONAL)
+        form[item] = formatted_number
+    for item in ['vk', 'telegram', 'instagram']:
+        url = getattr(socials, item)
+        if url:
+            parsed = urlparse(url=url)
+            form[item] = parsed.path.strip('/')
+        else:
+            form[item] = None
+
+    return render_template('users/profile.html', title='Profile', socials=socials, user=user, form=form)
 
 
 @users.route("/profile/<username>/change-password", methods=['GET', 'POST'])

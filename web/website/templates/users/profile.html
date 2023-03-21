@@ -32,24 +32,44 @@
                 <div class="card-body p-0">
                     <ul class="list-group list-group-flush rounded-3">
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <i class="fas fa-globe fa-lg text-warning"></i>
-                            <p class="mb-0">https://mdbootstrap.com</p>
+                            <div>
+                                <i class="fa-brands fa-youtube fa-xl text-danger"></i>
+                                <p>YouTube</p>
+                            </div>
+                            <p class="mb-0">{%if socials.youtube%}<a
+                                    href="{{socials.youtube}}">Youtube</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <i class="fab fa-github fa-lg" style="color: #333333;"></i>
-                            <p class="mb-0">mdbootstrap</p>
+                            <div>
+                                <i class="fab fa-vk fa-xl text-primary"></i>
+                                <p>VK</p>
+                            </div>
+                            <p class="mb-0">{%if form.vk%}<a
+                                    href="{{socials.vk}}">@{{form.vk}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <i class="fab fa-twitter fa-lg" style="color: #55acee;"></i>
-                            <p class="mb-0">@mdbootstrap</p>
+                            <div>
+                                <i class="fa-brands fa-telegram fa-xl text-primary"></i>
+                                <p>Telegram</p>
+                            </div>
+                            <p class="mb-0">{%if form.telegram%}<a
+                                    href="{{socials.telegram}}">@{{form.telegram}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <i class="fab fa-instagram fa-lg" style="color: #ac2bac;"></i>
-                            <p class="mb-0">mdbootstrap</p>
+                            <div>
+                                <i class="fa-brands fa-instagram fa-xl text-warning"></i>
+                                <p>Instagram</p>
+                            </div>
+                            <p class="mb-0">{%if form.instagram%}<a
+                                    href="{{socials.instagram}}">@{{form.instagram}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
-                            <i class="fab fa-facebook-f fa-lg" style="color: #3b5998;"></i>
-                            <p class="mb-0">mdbootstrap</p>
+                            <div>
+                                <i class="fas fa-globe fa-xl text-warning"></i>
+                                <p>Website</p>
+                            </div>
+                            <p class="mb-0">{%if socials.website%}<a
+                                    href="{{socials.website}}">Website</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                     </ul>
                 </div>
@@ -60,46 +80,62 @@
                 <div class="card-body">
                     <div class="row">
                         <div class="col-sm-3">
+                            <i class="fas fa-id-card fa-xl text-primary"></i>
                             <p class="mb-0">Full Name</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">Johnatan Smith</p>
+                            <p class="text-muted mb-0">{%if socials.first_name%}{{socials.first_name}}{%endif%}
+                                {%if socials.last_name%}{{socials.last_name}}{%endif%}</p>
                         </div>
                     </div>
                     <hr>
                     <div class="row">
                         <div class="col-sm-3">
+                            <i class="fa-solid fa-envelope fa-xl text-primary"></i>
                             <p class="mb-0">Email</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">example@example.com</p>
+                            <p class="text-muted mb-0">{{user.email}}</p>
                         </div>
                     </div>
                     <hr>
                     <div class="row">
                         <div class="col-sm-3">
-                            <p class="mb-0">Phone</p>
-                        </div>
-                        <div class="col-sm-9">
-                            <p class="text-muted mb-0">(097) 234-5678</p>
-                        </div>
-                    </div>
-                    <hr>
-                    <div class="row">
-                        <div class="col-sm-3">
+                            <i class="fa-solid fa-phone fa-xl text-primary"></i>
                             <p class="mb-0">Mobile</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">(098) 765-4321</p>
+                            <p class="text-muted mb-0">{% if form.phone_number%}{{form.phone_number}}{%endif%}</p>
                         </div>
                     </div>
                     <hr>
                     <div class="row">
                         <div class="col-sm-3">
-                            <p class="mb-0">Address</p>
+                            <i class="fa-brands fa-viber fa-xl text-primary"></i>
+                            <p class="mb-0">Viber</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">Bay Area, San Francisco, CA</p>
+                            <p class="text-muted mb-0">{% if form.viber%}{{form.viber}}{%endif%}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <i class="fa-brands fa-whatsapp fa-xl text-primary"></i>
+                            <p class="mb-0">WhatsApp</p>
+                        </div>
+                        <div class="col-sm-9">
+                            <p class="text-muted mb-0">{% if form.whatsapp%}{{form.whatsapp}}{%endif%}</p>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="row">
+                        <div class="col-sm-3">
+                            <i class="fa-solid fa-circle-info fa-xl text-primary"></i>
+                            <p class="mb-0">About</p>
+                        </div>
+                        <div class="col-sm-9">
+                            <p class="text-muted mb-0">{{socials.about}}</p>
                         </div>
                     </div>
                 </div>

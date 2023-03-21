@@ -34,13 +34,13 @@ class EntryForm(CustomValidatorsMixin, FlaskForm):
 
 class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
     youtube = URLField('Youtube',
-                       validators=[Optional(), Length(max=255), Regexp('(https?:\/\/)?(www\.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
+                       validators=[Optional(), Length(max=255), Regexp('(https?:\/\/)?(?:www.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
                                                                        message='Please enter a valid YouTube link'), IntegrityCheck()],
                        render_kw={"placeholder": "https://www.youtube.com/channel/"})
     website = URLField('Website', validators=[Optional(), Length(max=255), IntegrityCheck()],
                        render_kw={"placeholder": "https://www.example.com/"})
     vk = URLField('VK',
-                  validators=[Optional(), Length(max=255), Regexp('(https?:\/\/|https:\/\/)?(www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+',
+                  validators=[Optional(), Length(max=255), Regexp('^(https?:\/\/)?(?:www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+$',
                                                                   message='Please enter a valid VK link'), IntegrityCheck()],
                   render_kw={"placeholder": "https://vk.com/username"})
     telegram = URLField('Telegram',
