@@ -11,7 +11,7 @@
             <div class="article-metadata-avatar">
                 <div class="thumbnail author-avatar">
                     <img class="account-img "
-                        src="{{ url_for('static', filename='images/profiles/' + post.author.image_file) }}">
+                        src="{{ url_for('static', filename='images/profiles/' + post.author.socials.first().avatar) }}">
                 </div>
             </div>
             <div class="article-metadata-author">

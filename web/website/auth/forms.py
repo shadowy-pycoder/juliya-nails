@@ -61,7 +61,7 @@ class IntegrityCheck:
             if query and query.user_id != current_user.uuid:
                 raise ValidationError(self.message)
         elif self.model == User:
-            query = self.model.query.filter(self.model.username.ilike(f'%{field.data}%')).first()
+            query = self.model.query.filter(self.model.username.ilike(field.data)).first()
             if query:
                 raise ValidationError(self.message)
 

@@ -9,7 +9,7 @@ from itsdangerous import URLSafeTimedSerializer
 from sqlalchemy.dialects.postgresql import UUID, FLOAT
 from sqlalchemy.sql import func
 from wtforms import StringField
-from wtforms.validators import ValidationError, DataRequired
+from wtforms.validators import ValidationError
 
 from . import db, login_manager, admin, bcrypt
 from .utils import save_image, delete_image
@@ -34,14 +34,13 @@ class User(UserMixin, db.Model):
     username = db.Column(db.String(20), unique=True, nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(60), nullable=False)
-    image_file = db.Column(db.String(20), nullable=False, default='default.jpg')
     registered_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
     confirmed = db.Column(db.Boolean, nullable=False, default=False)
     confirmed_on = db.Column(db.DateTime(timezone=True), nullable=True)
     admin = db.Column(db.Boolean, nullable=False, default=False)
     entries = db.relationship('Entry', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
     posts = db.relationship('Post', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
-    socials = db.relationship('SocialMedia', back_populates='user', lazy='joined', cascade="all, delete-orphan")
+    socials = db.relationship('SocialMedia', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -116,6 +115,11 @@ class SocialMedia(db.Model):
     __tablename__ = 'socials'
 
     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
+    user = db.relationship('User', back_populates='socials', lazy='select')
+    avatar = db.Column(db.String(20), nullable=False, default='default.jpg')
+    first_name = db.Column(db.String(50), nullable=True)
+    last_name = db.Column(db.String(50), nullable=True)
     phone_number = db.Column(db.String(50), unique=True, nullable=True)
     viber = db.Column(db.String(50), unique=True, nullable=True)
     whatsapp = db.Column(db.String(50), unique=True, nullable=True)
@@ -125,10 +129,6 @@ class SocialMedia(db.Model):
     website = db.Column(db.String(255), unique=True, nullable=True)
     vk = db.Column(db.String(255), unique=True)
     about = db.Column(db.String(255), nullable=True)
-    user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-    user = db.relationship('User', back_populates='socials', lazy='select')
-    first_name = db.Column(db.String(50), nullable=True)
-    last_name = db.Column(db.String(50), nullable=True)
 
     def __repr__(self):
         items = {}
@@ -206,11 +206,9 @@ class UserView(AdminView):
                    'username',
                    'email',
                    'password_hash',
-                   'image_file',
                    'confirmed',
                    'confirmed_on',
                    'admin',
-                   'socials'
                    )
     column_searchable_list = ('username', 'email')
     column_default_sort = ('admin', True)
@@ -219,53 +217,25 @@ class UserView(AdminView):
 
     form_extra_fields = {
         'new_password': StringField('New Password'),
-        'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])]),
     }
 
     form_columns = (
         'username',
         'email',
         'new_password',
-        'image_file',
-        'profile_image',
         'confirmed',
         'confirmed_on',
         'admin',
         'entries',
         'posts',
+        'socials',
     )
-    form_widget_args = {
-        'image_file': {
-            'disabled': True
-        }
-    }
-
-    def on_form_prefill(self, form, id):
-        self.img = form.image_file.data
 
     def on_model_change(self, form, model: User, is_created):
         if form.new_password.data != '':
             model.password = form.new_password.data
         elif is_created and form.new_password.data == '':
             raise ValidationError('Password must not be empty.')
-
-        if form.profile_image.data is not None:
-            if not is_created and self.img != 'default.jpg':
-                try:
-                    delete_image(self.img, path='profiles')
-                except FileNotFoundError:
-                    pass
-            model.image_file = save_image(form.profile_image, path='profiles')
-
-    def on_model_delete(self, model: User):
-        self.img = model.image_file
-
-    def after_model_delete(self, model: User):
-        if self.img != 'default.jpg':
-            try:
-                delete_image(self.img, path='profiles')
-            except FileNotFoundError:
-                pass
 
 
 class PostView(AdminView):
@@ -329,8 +299,68 @@ class EntryView(AdminView):
 class SocialMediaView(AdminView):
     column_searchable_list = ('phone_number',)
     column_default_sort = ('phone_number', True)
-    column_editable_list = ('phone_number', 'viber', 'whatsapp', 'instagram',
-                            'telegram', 'youtube', 'website', 'vk', 'about', 'first_name', 'last_name')
+    column_editable_list = (
+        'first_name',
+        'last_name',
+        'phone_number',
+        'viber',
+        'whatsapp',
+        'instagram',
+        'telegram',
+        'youtube',
+        'website',
+        'vk',
+        'about',
+    )
+
+    form_extra_fields = {
+        'profile_image': FileField('Upload Profile Image', validators=[FileAllowed(['jpg', 'png'])]),
+    }
+
+    form_columns = (
+        'user',
+        'avatar',
+        'profile_image',
+        'first_name',
+        'last_name',
+        'phone_number',
+        'viber',
+        'whatsapp',
+        'instagram',
+        'telegram',
+        'youtube',
+        'website',
+        'vk',
+        'about',
+    )
+
+    form_widget_args = {
+        'avatar': {
+            'disabled': True
+        }
+    }
+
+    def on_form_prefill(self, form, id):
+        self.img = form.avatar.data
+
+    def on_model_change(self, form, model: SocialMedia, is_created):
+        if form.profile_image.data is not None:
+            if not is_created and self.img != 'default.jpg':
+                try:
+                    delete_image(self.img, path='profiles')
+                except FileNotFoundError:
+                    pass
+            model.avatar = save_image(form.profile_image, path='profiles')
+
+    def on_model_delete(self, model: SocialMedia):
+        self.img = model.avatar
+
+    def after_model_delete(self, model: SocialMedia):
+        if self.img != 'default.jpg':
+            try:
+                delete_image(self.img, path='profiles')
+            except FileNotFoundError:
+                pass
 
 
 admin.add_view(UserView(User, db.session))

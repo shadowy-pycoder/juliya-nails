@@ -79,7 +79,6 @@ def change_email(username, token):
         new_email = session.get('new_email')
         if new_email is not None:
             current_user.email = new_email
-            db.session.add(current_user)
             db.session.commit()
             flash('Your email address has been updated.', 'success')
             return redirect(url_for('users.profile', username=current_user.username))

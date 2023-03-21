@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, flash, redirect, url_for
 from flask_login import current_user
 from .forms import PostForm, EditPostForm
-from .. models import Post
+from .. models import Post, SocialMedia
 from .. utils import admin_required, save_image, delete_image
 from .. import db
 
@@ -23,6 +23,7 @@ def about():
 def page_not_found(e):
     return render_template('404.html', title='Page Not Found'), 404
 
+
 @main.route("/create-post", methods=['GET', 'POST'])
 @admin_required
 def create_post():
@@ -34,7 +35,8 @@ def create_post():
         db.session.commit()
         flash('Your post has been created!', 'success')
         return redirect(url_for('main.home'))
-    return render_template('create_post.html', title='Create Post', legend='Create Post', form=form) 
+    return render_template('create_post.html', title='Create Post', legend='Create Post', form=form)
+
 
 @main.route("/edit-post/<post_id>", methods=['GET', 'POST'])
 @admin_required
