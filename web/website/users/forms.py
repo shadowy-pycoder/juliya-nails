@@ -1,4 +1,5 @@
 from flask_wtf import FlaskForm
+from flask_wtf.file import FileAllowed, FileField
 from wtforms import (StringField, PasswordField, SubmitField, SelectMultipleField, DateField, TimeField,
                      URLField, TextAreaField)
 from wtforms.validators import DataRequired, Length, Email, EqualTo, Regexp, Optional
@@ -60,4 +61,5 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                              render_kw={"placeholder": "Enter first name"})
     last_name = StringField('Last Name', validators=[Optional(), Length(max=50)],
                             render_kw={"placeholder": "Enter last name"})
+    avatar = FileField('Upload Profile Image', validators=[Optional(), FileAllowed(['jpg', 'png'])])
     submit = SubmitField('Update Profile')

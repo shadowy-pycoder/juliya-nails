@@ -3,12 +3,13 @@
 
 {% block content %}
 <div class="content-section">
-    <form method="POST" action="">
+    <form method="POST" action="" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
         <fieldset class="form-group" id="update-form">
             <legend class="border-bottom mb-4">{{ legend }}</legend>
             {{ render_icon_field(form.first_name, "fas fa-id-card fa-xl text-primary") }}
             {{ render_icon_field(form.last_name, "fas fa-id-card fa-xl text-primary") }}
+            {{ render_field(form.avatar) }}
             {{ render_icon_field(form.youtube, "fa-brands fa-youtube fa-xl text-danger") }}
             {{ render_icon_field(form.website, "fas fa-globe fa-xl text-warning") }}
             {{ render_icon_field(form.vk, "fab fa-vk fa-xl text-primary") }}

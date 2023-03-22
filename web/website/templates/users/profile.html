@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block main %}
+{% block content %}
 <section style="background-color: #eee;">
 
     <div class="row">
@@ -22,15 +22,7 @@
                         <a class="btn btn-outline-primary ms-1"
                             href="{{url_for('users.my_entries', username=current_user.username)}}" role="button">My
                             Entries</a>
-                        <a class="btn btn-outline-success ms-1"
-                            href="{{url_for('users.update_profile', username=current_user.username)}}"
-                            role="button">Update Profile</a>
-                        <a class="btn btn-outline-success ms-1"
-                            href="{{ url_for('users.change_password_request', username=current_user.username) }}"
-                            role="button">Change Password</a>
-                        <a class="btn btn-outline-success ms-1"
-                            href="{{ url_for('users.change_email_request', username=current_user.username) }}"
-                            role="button">Change Email</a>
+
                     </div>
                 </div>
             </div>
@@ -221,3 +213,13 @@
     </div>
 </section>
 {% endblock%}
+{%block sidebar_list %}
+<li class="list-group-item list-group-item-light"><a class="btn btn-outline-success ms-1"
+        href="{{url_for('users.update_profile', username=current_user.username)}}" role="button">Update Profile</a></li>
+<li class="list-group-item list-group-item-light"><a class="btn btn-outline-success ms-1"
+        href="{{ url_for('users.change_password_request', username=current_user.username) }}" role="button">Change
+        Password</a></li>
+<li class="list-group-item list-group-item-light"><a class="btn btn-outline-success ms-1"
+        href="{{ url_for('users.change_email_request', username=current_user.username) }}" role="button">Change
+        Email</a></li>
+{% endblock %}

@@ -6,7 +6,7 @@ import phonenumbers
 
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
 from ..models import User, Entry, Service, SocialMedia
-from ..utils import send_email, email_confirmed, current_user_required
+from ..utils import send_email, email_confirmed, current_user_required, save_image, delete_image
 from .. import db
 
 
@@ -140,6 +140,15 @@ def update_profile(username):
                     field.data = field.data.lower()
                 elif field.data and field.name in ['first_name', 'last_name']:
                     field.data = field.data.capitalize()
+                elif field.data and field.name in ['avatar']:
+                    if socials.avatar != 'default.jpg':
+                        try:
+                            delete_image(socials.avatar, path='profiles')
+                        except (FileNotFoundError, TypeError):
+                            pass
+                    field.data = save_image(form.avatar, path='profiles')
+                elif field.name in ['avatar']:
+                    field.data = socials.avatar
                 elif not field.data:
                     field.data = None
                 setattr(socials, field.name, field.data)
