@@ -10,6 +10,10 @@
             {{ render_icon_field(form.first_name, "fas fa-id-card fa-xl text-primary") }}
             {{ render_icon_field(form.last_name, "fas fa-id-card fa-xl text-primary") }}
             {{ render_field(form.avatar) }}
+            <div class="form-check">
+                {{ form.delete_avatar(class="form-check-input") }}
+                {{ form.delete_avatar.label(class="form-check-label") }}
+            </div>
             {{ render_icon_field(form.youtube, "fa-brands fa-youtube fa-xl text-danger") }}
             {{ render_icon_field(form.website, "fas fa-globe fa-xl text-warning") }}
             {{ render_icon_field(form.vk, "fab fa-vk fa-xl text-primary") }}

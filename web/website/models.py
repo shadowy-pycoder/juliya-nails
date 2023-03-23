@@ -269,20 +269,14 @@ class PostView(AdminView):
     def on_model_change(self, form, model: Post, is_created):
         if form.new_image.data is not None:
             if not is_created:
-                try:
-                    delete_image(self.img)
-                except (FileNotFoundError, TypeError):
-                    pass
+                delete_image(self.img)
             model.image = save_image(form.new_image)
 
     def on_model_delete(self, model: Post):
         self.img = model.image
 
     def after_model_delete(self, model: Post):
-        try:
-            delete_image(self.img)
-        except (FileNotFoundError, TypeError):
-            pass
+        delete_image(self.img)
 
 
 class ServiceView(AdminView):
@@ -345,22 +339,15 @@ class SocialMediaView(AdminView):
 
     def on_model_change(self, form, model: SocialMedia, is_created):
         if form.profile_image.data is not None:
-            if not is_created and self.img != 'default.jpg':
-                try:
-                    delete_image(self.img, path='profiles')
-                except FileNotFoundError:
-                    pass
+            if not is_created:
+                delete_image(self.img, path='profiles')
             model.avatar = save_image(form.profile_image, path='profiles')
 
     def on_model_delete(self, model: SocialMedia):
         self.img = model.avatar
 
     def after_model_delete(self, model: SocialMedia):
-        if self.img != 'default.jpg':
-            try:
-                delete_image(self.img, path='profiles')
-            except FileNotFoundError:
-                pass
+        delete_image(self.img, path='profiles')
 
 
 admin.add_view(UserView(User, db.session))

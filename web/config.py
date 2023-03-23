@@ -19,6 +19,7 @@ class Config:
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
     UPLOAD_FOLDER = 'static/images/'
+    DEFAULT_AVATAR = 'default.jpg'
 
 
 class DevelopmentConfig(Config):

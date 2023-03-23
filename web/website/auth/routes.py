@@ -52,7 +52,8 @@ def login():
         return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user: User = User.query.filter_by(email=form.email.data.lower()).first()
+        # user: User = User.query.filter_by(email=form.email.data.lower()).first()
+        user = db.session.execute(db.select(User).filter_by(email=form.email.data.lower())).scalar_one()
         if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
@@ -64,19 +65,20 @@ def login():
     return render_template('auth/login.html', title='Login', legend='Login', form=form)
 
 
-@auth.route("/logout")
-@login_required
+@ auth.route("/logout")
+@ login_required
 def logout():
     logout_user()
     return redirect(url_for('main.home'))
 
 
-@auth.route('/confirm/<token>')
-@login_required
+@ auth.route('/confirm/<token>')
+@ login_required
 def confirm_email(token):
     if current_user.confirmed:
         flash('Account already confirmed.', 'info')
     elif current_user.confirm_email_token(token):
+        db.session.add(current_user)
         db.session.commit()
         flash('You have confirmed your account. Thanks!', 'success')
     else:
@@ -84,16 +86,16 @@ def confirm_email(token):
     return redirect(url_for('main.home'))
 
 
-@auth.route('/unconfirmed')
-@login_required
+@ auth.route('/unconfirmed')
+@ login_required
 def unconfirmed():
     if current_user.confirmed:
         return redirect(url_for('main.home'))
     return render_template('auth/unconfirmed.html')
 
 
-@auth.route('/resend')
-@login_required
+@ auth.route('/resend')
+@ login_required
 def resend_confirmation():
     token = current_user.generate_token()
     confirm_url = url_for('auth.confirm_email', token=token, _external=True)
@@ -104,14 +106,15 @@ def resend_confirmation():
     return redirect(url_for('auth.unconfirmed'))
 
 
-@auth.route('/reset-request', methods=['GET', 'POST'])
+@ auth.route('/reset-request', methods=['GET', 'POST'])
 def password_reset_request():
     if not current_user.is_anonymous:
         return redirect(url_for('main.home'))
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
         flash('An email with instructions to reset your password has been sent.', 'info')
-        user: User = User.query.filter_by(email=form.email.data.lower()).first()
+        # user: User = User.query.filter_by(email=form.email.data.lower()).first()
+        user = db.session.execute(db.select(User).filter_by(email=form.email.data.lower())).scalar_one()
         if user:
             token = user.generate_token(
                 context='reset',
@@ -127,7 +130,7 @@ def password_reset_request():
                            form=form)
 
 
-@auth.route("/reset-password/<token>", methods=['GET', 'POST'])
+@ auth.route("/reset-password/<token>", methods=['GET', 'POST'])
 def password_reset_token(token):
     if current_user.is_authenticated:
         return redirect(url_for('home'))

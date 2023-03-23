@@ -79,9 +79,13 @@ def save_image(file: FileField, path='posts'):
 
 
 def delete_image(filename, path='posts'):
-    img_path = os.path.join(
-        current_app.root_path,
-        current_app.config['UPLOAD_FOLDER'],
-        path,
-        filename)
-    os.unlink(img_path)
+    if filename != current_app.config['DEFAULT_AVATAR']:
+        try:
+            img_path = os.path.join(
+                current_app.root_path,
+                current_app.config['UPLOAD_FOLDER'],
+                path,
+                filename)
+            os.unlink(img_path)
+        except (FileNotFoundError, TypeError):
+            pass

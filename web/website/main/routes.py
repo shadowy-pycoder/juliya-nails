@@ -1,7 +1,7 @@
 from flask import render_template, Blueprint, flash, redirect, url_for
 from flask_login import current_user
 from .forms import PostForm, EditPostForm
-from .. models import Post, SocialMedia
+from .. models import Post
 from .. utils import admin_required, save_image, delete_image
 from .. import db
 
@@ -11,7 +11,8 @@ main = Blueprint('main', __name__)
 @main.route("/")
 @main.route("/home")
 def home():
-    posts = Post.query.order_by(Post.posted_on.desc()).all()
+    # posts = Post.query.order_by(Post.posted_on.desc()).all()
+    posts = db.session.execute(db.select(Post).order_by(Post.posted_on.desc())).scalars()
     return render_template('home.html', title='Home', posts=posts)
 
 
@@ -42,9 +43,17 @@ def create_post():
 @admin_required
 def edit_post(post_id):
     form = EditPostForm()
-    post: Post = Post.query.get_or_404(post_id)
+    # post: Post = Post.query.get_or_404(post_id)
+    post: Post = db.get_or_404(Post, post_id)
     if form.validate_on_submit():
-        image = save_image(form.image) if form.image.data else post.image
+        if form.delete_image.data:
+            image = None
+            delete_image(post.image)
+        elif form.image.data:
+            image = save_image(form.image)
+            delete_image(post.image)
+        else:
+            image = post.image
         post.title = form.title.data
         post.image = image
         post.content = form.content.data
@@ -60,12 +69,9 @@ def edit_post(post_id):
 @main.route("/delete-post/<post_id>", methods=['GET', 'POST'])
 @admin_required
 def delete_post(post_id):
-    post: Post = Post.query.get_or_404(post_id)
-    if post.image is not None:
-        try:
-            delete_image(post.image)
-        except FileNotFoundError:
-            pass
+    # post: Post = Post.query.get_or_404(post_id)
+    post: Post = db.get_or_404(Post, post_id)
+    delete_image(post.image)
     db.session.delete(post)
     db.session.commit()
     flash('Your post has been deleted!', 'success')

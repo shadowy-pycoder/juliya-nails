@@ -1,13 +1,13 @@
 from urllib.parse import urlparse
 
-from flask import flash, render_template, redirect, url_for, session, Blueprint, request
+from flask import flash, render_template, redirect, url_for, session, Blueprint, request, current_app
 from flask_login import current_user, login_required
 import phonenumbers
 
+from .. import db
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
 from ..models import User, Entry, Service, SocialMedia
 from ..utils import send_email, email_confirmed, current_user_required, save_image, delete_image
-from .. import db
 
 
 users = Blueprint('users', __name__)
@@ -79,6 +79,7 @@ def change_email(username, token):
         new_email = session.get('new_email')
         if new_email is not None:
             current_user.email = new_email
+            db.session.add(current_user)
             db.session.commit()
             flash('Your email address has been updated.', 'success')
             return redirect(url_for('users.profile', username=current_user.username))
@@ -135,29 +136,29 @@ def update_profile(username):
     form = UpdateProfileForm()
     if form.validate_on_submit():
         for field in form._fields.values():
-            if field.name not in ['submit', 'csrf_token']:
+            if field.name not in ['delete_avatar', 'submit', 'csrf_token']:
                 if field.data and field.name in ['instagram', 'telegram', 'vk']:
                     field.data = field.data.lower()
                 elif field.data and field.name in ['first_name', 'last_name']:
                     field.data = field.data.capitalize()
+                elif form.delete_avatar.data and field.name in ['avatar']:
+                    delete_image(socials.avatar, path='profiles')
+                    field.data = current_app.config['DEFAULT_AVATAR']
                 elif field.data and field.name in ['avatar']:
-                    if socials.avatar != 'default.jpg':
-                        try:
-                            delete_image(socials.avatar, path='profiles')
-                        except (FileNotFoundError, TypeError):
-                            pass
+                    delete_image(socials.avatar, path='profiles')
                     field.data = save_image(form.avatar, path='profiles')
                 elif field.name in ['avatar']:
                     field.data = socials.avatar
                 elif not field.data:
                     field.data = None
                 setattr(socials, field.name, field.data)
+                db.session.add(socials)
         db.session.commit()
         flash('Your profile has been updated.', 'success')
         return redirect(url_for('users.profile', username=current_user.username))
     elif request.method == 'GET':
         for field in form._fields.values():
-            if field.name not in ['submit', 'csrf_token']:
+            if field.name not in ['delete_avatar', 'submit', 'csrf_token']:
                 field.data = getattr(socials, field.name)
     return render_template('users/update_profile.html',
                            title='Update Profile',
