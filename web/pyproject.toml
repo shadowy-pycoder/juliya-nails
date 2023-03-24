@@ -23,6 +23,8 @@ flask-ckeditor = "^0.4.6"
 flask-uploads = "^0.2.1"
 pillow = "^9.4.0"
 phonenumbers = "^8.13.7"
+alchemical = "^0.7.0"
+sqlalchemy = "^2.0.7"
 
 
 [tool.poetry.group.dev.dependencies]

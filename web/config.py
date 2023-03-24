@@ -10,7 +10,8 @@ if os.path.exists(dotenv_path):
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY')
-    SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URI']
+    # SQLALCHEMY_DATABASE_URI = os.environ['DATABASE_URI']
+    ALCHEMICAL_DATABASE_URL = os.environ['DATABASE_URI']
     MAIL_DEBUG = os.environ.get('MAIL_DEBUG')
     MAIL_SERVER = os.environ.get('MAIL_SERVER')
     MAIL_PORT = os.environ.get('MAIL_PORT')

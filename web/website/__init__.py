@@ -1,3 +1,4 @@
+from alchemical.flask import Alchemical
 from flask import Flask
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
@@ -5,12 +6,14 @@ from flask_ckeditor import CKEditor
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
-from flask_sqlalchemy import SQLAlchemy
+# from flask_sqlalchemy import SQLAlchemy
 
 
 from config import config
 
-db = SQLAlchemy()
+
+# db = SQLAlchemy()
+db = Alchemical()
 bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -40,4 +43,15 @@ def create_app(config_name):
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(users, url_prefix='/users')
     app.register_error_handler(404, page_not_found)
+    from .models import add_admin_views
+    with db.Session() as session:
+        add_admin_views(session)
+    # from .models import (User, SocialMedia, Post, Entry, Service, UserView,
+    #                      SocialMediaView, PostView, EntryView, ServiceView)
+    # with db.Session() as session:
+    #     admin.add_view(UserView(User, session))
+    #     admin.add_view(EntryView(Entry, session))
+    #     admin.add_view(PostView(Post, session))
+    #     admin.add_view(ServiceView(Service, session))
+    #     admin.add_view(SocialMediaView(SocialMedia, session))
     return app

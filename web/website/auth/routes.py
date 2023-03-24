@@ -2,6 +2,7 @@ from urllib.parse import urlparse, urljoin
 
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
 from flask_login import login_user, current_user, logout_user, login_required
+import sqlalchemy as sa
 
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
@@ -52,8 +53,7 @@ def login():
         return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
-        # user: User = User.query.filter_by(email=form.email.data.lower()).first()
-        user = db.session.execute(db.select(User).filter_by(email=form.email.data.lower())).scalar_one()
+        user = db.session.scalar(sa.select(User).filter_by(email=form.email.data.lower()))
         if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')
