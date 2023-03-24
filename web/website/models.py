@@ -13,27 +13,20 @@ from sqlalchemy.sql import func
 from wtforms import StringField
 from wtforms.validators import ValidationError
 
-from . import db, login_manager, bcrypt
+from . import db, bcrypt
 from .utils import save_image, delete_image
 
 
-# @login_manager.user_loader
-# def load_user(user_id):
-#     return User.query.get(user_id)
+Base = db.base
 
 
-@login_manager.user_loader
-def load_user(user_id):
-    return db.session.get(User, user_id)
-
-
-association_table = sa.Table('association_table', db.Model.metadata,
+association_table = sa.Table('association_table', Base.metadata,
                              sa.Column('entry_id', UUID(as_uuid=True), sa.ForeignKey('entries.uuid')),
                              sa.Column('service_id', sa.Integer, sa.ForeignKey('services.id'))
                              )
 
 
-class User(UserMixin, db.Model):
+class User(UserMixin, Base):
 
     __tablename__ = 'users'
 
@@ -117,7 +110,7 @@ class User(UserMixin, db.Model):
         return user
 
 
-class SocialMedia(db.Model):
+class SocialMedia(Base):
 
     __tablename__ = 'socials'
 
@@ -147,7 +140,7 @@ class SocialMedia(db.Model):
         return ', '.join(f'{item}: {val}' for item, val in items.items())
 
 
-class Post(db.Model):
+class Post(Base):
 
     __tablename__ = 'posts'
 
@@ -163,7 +156,7 @@ class Post(db.Model):
         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
 
 
-class Entry(db.Model):
+class Entry(Base):
 
     __tablename__ = 'entries'
 
@@ -179,7 +172,7 @@ class Entry(db.Model):
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
 
 
-class Service(db.Model):
+class Service(Base):
 
     __tablename__ = 'services'
 
@@ -366,7 +359,7 @@ def add_admin_views(session):
     admin.add_view(SocialMediaView(SocialMedia, session))
 
 
-# class User(UserMixin, db.Model):
+# class User(UserMixin, Base):
 
 #     __tablename__ = 'users'
 

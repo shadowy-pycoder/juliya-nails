@@ -12,6 +12,8 @@ from .. import db
 
 auth = Blueprint('auth', __name__)
 
+db.session()
+
 
 def is_safe_url(target):
     ref_url = urlparse(request.host_url)
