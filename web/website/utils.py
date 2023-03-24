@@ -4,12 +4,12 @@ from functools import wraps
 from threading import Thread
 
 from flask import current_app, flash, redirect, url_for, render_template, Flask, abort
-from flask_login import current_user
 from flask_mail import Message
 from flask_wtf.file import FileField
 from PIL import Image
 
 from . import mail
+from .models import current_user
 
 
 def send_async_email(app: Flask, msg: Message):
@@ -60,7 +60,7 @@ def current_user_required(func):
     return decorated_function
 
 
-def save_image(file: FileField, path='posts'):
+def save_image(file: FileField, path: str = 'posts') -> str:
     _, f_ext = os.path.splitext(file.data.filename)
     filename = secrets.token_hex(8) + f_ext
     img_path = os.path.join(

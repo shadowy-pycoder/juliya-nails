@@ -1,18 +1,16 @@
 from urllib.parse import urlparse, urljoin
 
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
-from flask_login import login_user, current_user, logout_user, login_required
+from flask_login import login_user, logout_user, login_required
 import sqlalchemy as sa
 
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
-from ..models import User, SocialMedia
-from ..utils import send_email
 from .. import db
+from ..models import User, SocialMedia, current_user
+from ..utils import send_email
 
 auth = Blueprint('auth', __name__)
-
-db.session()
 
 
 def is_safe_url(target):
@@ -67,8 +65,8 @@ def login():
     return render_template('auth/login.html', title='Login', legend='Login', form=form)
 
 
-@ auth.route("/logout")
-@ login_required
+@auth.route("/logout")
+@login_required
 def logout():
     logout_user()
     return redirect(url_for('main.home'))
@@ -132,7 +130,7 @@ def password_reset_request():
                            form=form)
 
 
-@ auth.route("/reset-password/<token>", methods=['GET', 'POST'])
+@auth.route("/reset-password/<token>", methods=['GET', 'POST'])
 def password_reset_token(token):
     if current_user.is_authenticated:
         return redirect(url_for('home'))

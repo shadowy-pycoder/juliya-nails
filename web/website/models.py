@@ -1,4 +1,6 @@
+from datetime import datetime, date as date_, time as time_
 import uuid
+from uuid import UUID as UUID_
 
 from flask import abort, current_app
 from flask_admin.contrib.sqla import ModelView
@@ -8,39 +10,39 @@ from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
 import sqlalchemy as sa
 import sqlalchemy.orm as so
-from sqlalchemy.dialects.postgresql import UUID, FLOAT
+from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import scoped_session
 from sqlalchemy.sql import func
 from wtforms import StringField
 from wtforms.validators import ValidationError
 
 from . import db, bcrypt
-from .utils import save_image, delete_image
+from .utils import save_image, delete_image, current_user
 
+current_user: 'User' = current_user
 
-Base = db.base
-
-
-association_table = sa.Table('association_table', Base.metadata,
+association_table = sa.Table('association_table', db.Model.metadata,
                              sa.Column('entry_id', UUID(as_uuid=True), sa.ForeignKey('entries.uuid')),
                              sa.Column('service_id', sa.Integer, sa.ForeignKey('services.id'))
                              )
 
 
-class User(UserMixin, Base):
+class User(UserMixin, db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'users'
 
-    uuid = sa.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username = sa.Column(sa.String(20), unique=True, nullable=False)
-    email = sa.Column(sa.String(100), unique=True, nullable=False)
-    password_hash = sa.Column(sa.String(60), nullable=False)
-    registered_on = sa.Column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
-    confirmed = sa.Column(sa.Boolean, nullable=False, default=False)
-    confirmed_on = sa.Column(sa.DateTime(timezone=True), nullable=True)
-    admin = sa.Column(sa.Boolean, nullable=False, default=False)
-    entries = so.relationship('Entry', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
-    posts = so.relationship('Post', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
-    socials = so.relationship('SocialMedia', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
+    uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    username: so.Mapped[str] = so.mapped_column(sa.String(20), unique=True, nullable=False)
+    email: so.Mapped[str] = so.mapped_column(sa.String(100), unique=True, nullable=False)
+    password_hash: so.Mapped[str] = so.mapped_column(sa.String(60), nullable=False)
+    registered_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(
+        timezone=True), nullable=False, server_default=func.now())
+    confirmed: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
+    confirmed_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(timezone=True), nullable=True)
+    admin: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
+    entries: so.WriteOnlyMapped['Entry'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
+    posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade="all, delete-orphan")
+    socials: so.Mapped['SocialMedia'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"User('{self.username}', '{self.email}')"
@@ -73,10 +75,10 @@ class User(UserMixin, Base):
         context='confirm',
         salt_context='confirm-email',
         expiration=3600
-    ):
+    ) -> bool:
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
-            data = serializer.loads(
+            data: dict = serializer.loads(
                 token,
                 salt=salt_context,
                 max_age=expiration
@@ -97,38 +99,36 @@ class User(UserMixin, Base):
     ):
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
-            data = serializer.loads(
+            data: dict = serializer.loads(
                 token,
                 salt=salt_context,
                 max_age=expiration
             )
         except:
             return False
-        user = User.query.get(data.get('reset'))
-        if user is None:
-            return False
-        return user
+        user = db.session.get(User, (data.get('reset')))
+        return user or False
 
 
-class SocialMedia(Base):
+class SocialMedia(db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'socials'
 
-    uuid = sa.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = sa.Column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
-    user = so.relationship('User', back_populates='socials')
-    avatar = sa.Column(sa.String(20), nullable=False, default='default.jpg')
-    first_name = sa.Column(sa.String(50), nullable=True)
-    last_name = sa.Column(sa.String(50), nullable=True)
-    phone_number = sa.Column(sa.String(50), unique=True, nullable=True)
-    viber = sa.Column(sa.String(50), unique=True, nullable=True)
-    whatsapp = sa.Column(sa.String(50), unique=True, nullable=True)
-    instagram = sa.Column(sa.String(255), unique=True, nullable=True)
-    telegram = sa.Column(sa.String(255), unique=True, nullable=True)
-    youtube = sa.Column(sa.String(255), unique=True, nullable=True)
-    website = sa.Column(sa.String(255), unique=True, nullable=True)
-    vk = sa.Column(sa.String(255), unique=True)
-    about = sa.Column(sa.String(255), nullable=True)
+    uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
+    user: so.Mapped['User'] = so.relationship(back_populates='socials')
+    avatar: so.Mapped[str] = so.mapped_column(sa.String(20), nullable=False, default='default.jpg')
+    first_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=True)
+    last_name: so.Mapped[str] = so.mapped_column(sa.String(50), nullable=True)
+    phone_number: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, nullable=True)
+    viber: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, nullable=True)
+    whatsapp: so.Mapped[str] = so.mapped_column(sa.String(50), unique=True, nullable=True)
+    instagram: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
+    telegram: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
+    youtube: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
+    website: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
+    vk: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
+    about: so.Mapped[str] = so.mapped_column(sa.String(255), nullable=True)
 
     def __repr__(self):
         items = {}
@@ -140,46 +140,47 @@ class SocialMedia(Base):
         return ', '.join(f'{item}: {val}' for item, val in items.items())
 
 
-class Post(Base):
+class Post(db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'posts'
 
-    id = sa.Column(sa.Integer, primary_key=True)
-    title = sa.Column(sa.String(100), nullable=False)
-    posted_on = sa.Column(sa.DateTime, nullable=False, default=func.now())
-    image = sa.Column(sa.String(20))
-    content = sa.Column(sa.Text, nullable=False)
-    author_id = sa.Column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
-    author = so.relationship('User', back_populates='posts')
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    title: so.Mapped[str] = so.mapped_column(sa.String(100), nullable=False)
+    posted_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(timezone=True), nullable=False, default=func.now())
+    image: so.Mapped[str] = so.mapped_column(sa.String(20))
+    content: so.Mapped[str] = so.mapped_column(sa.Text, nullable=False)
+    author_id: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
+    author: so.Mapped['User'] = so.relationship(back_populates='posts')
 
     def __repr__(self):
         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
 
 
-class Entry(Base):
+class Entry(db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'entries'
 
-    uuid = sa.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    services = so.relationship('Service', secondary=association_table, back_populates='entries')
-    created_on = sa.Column(sa.DateTime(timezone=True), nullable=False, server_default=func.now())
-    date = sa.Column(sa.Date, nullable=False)
-    time = sa.Column(sa.Time(timezone=True), nullable=False)
-    user_id = sa.Column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
-    user = so.relationship('User', back_populates='entries')
+    uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    services: so.Mapped['Service'] = so.relationship(secondary=association_table, back_populates='entries')
+    created_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(
+        timezone=True), nullable=False, server_default=func.now())
+    date: so.Mapped[date_] = so.mapped_column(sa.Date, nullable=False)
+    time: so.Mapped[time_] = so.mapped_column(sa.Time(timezone=True), nullable=False)
+    user_id: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
+    user: so.Mapped['User'] = so.relationship(back_populates='entries')
 
     def __repr__(self):
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
 
 
-class Service(Base):
+class Service(db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'services'
 
-    id = sa.Column(sa.Integer, primary_key=True)
-    name = sa.Column(sa.String(64), unique=True, nullable=False)
-    duration = sa.Column(FLOAT(), nullable=False)
-    entries = so.relationship('Entry', secondary=association_table, back_populates='services', lazy='dynamic')
+    id: so.Mapped[int] = so.mapped_column(primary_key=True)
+    name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, nullable=False)
+    duration: so.Mapped[float] = so.mapped_column(nullable=False)
+    entries: so.WriteOnlyMapped['Entry'] = so.relationship(secondary=association_table, back_populates='services')
 
     def __repr__(self):
         return self.name
@@ -195,7 +196,7 @@ class AdminView(ModelView):
         super().__init__(*args, **kwargs)
         self.static_folder = 'static'
 
-    def is_accessible(self):
+    def is_accessible(self) -> bool:
         if not current_user.is_anonymous and current_user.admin:
             return current_user.is_authenticated
         return abort(404)
@@ -350,169 +351,10 @@ class SocialMediaView(AdminView):
         delete_image(self.img, path='profiles')
 
 
-def add_admin_views(session):
+def add_admin_views(session: scoped_session):
     from . import admin
     admin.add_view(UserView(User, session))
     admin.add_view(EntryView(Entry, session))
     admin.add_view(PostView(Post, session))
     admin.add_view(ServiceView(Service, session))
     admin.add_view(SocialMediaView(SocialMedia, session))
-
-
-# class User(UserMixin, Base):
-
-#     __tablename__ = 'users'
-
-#     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-#     username = db.Column(db.String(20), unique=True, nullable=False)
-#     email = db.Column(db.String(100), unique=True, nullable=False)
-#     password_hash = db.Column(db.String(60), nullable=False)
-#     registered_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
-#     confirmed = db.Column(db.Boolean, nullable=False, default=False)
-#     confirmed_on = db.Column(db.DateTime(timezone=True), nullable=True)
-#     admin = db.Column(db.Boolean, nullable=False, default=False)
-#     entries = db.relationship('Entry', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
-#     posts = db.relationship('Post', back_populates='author', lazy='dynamic', cascade="all, delete-orphan")
-#     socials = db.relationship('SocialMedia', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
-
-#     def __repr__(self):
-#         return f"User('{self.username}', '{self.email}')"
-
-#     @property
-#     def password(self):
-#         raise AttributeError('Password is not a readable attribute')
-
-#     @password.setter
-#     def password(self, candidate):
-#         self.password_hash = bcrypt.generate_password_hash(candidate).decode('UTF-8')
-
-#     def verify_password(self, candidate):
-#         return bcrypt.check_password_hash(self.password_hash, candidate)
-
-#     def get_id(self):
-#         return self.uuid
-
-#     def generate_token(
-#         self,
-#         context='confirm',
-#         salt_context='confirm-email'
-#     ):
-#         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-#         return serializer.dumps({context: str(self.uuid)}, salt=salt_context)
-
-#     def confirm_email_token(
-#         self,
-#         token,
-#         context='confirm',
-#         salt_context='confirm-email',
-#         expiration=3600
-#     ):
-#         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-#         try:
-#             data = serializer.loads(
-#                 token,
-#                 salt=salt_context,
-#                 max_age=expiration
-#             )
-#         except:
-#             return False
-#         if data.get(context) != str(self.uuid):
-#             return False
-#         self.confirmed = True
-#         self.confirmed_on = func.now()
-#         return True
-
-#     @staticmethod
-#     def reset_password_token(
-#         token,
-#         salt_context='reset-password',
-#         expiration=3600
-#     ):
-#         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
-#         try:
-#             data = serializer.loads(
-#                 token,
-#                 salt=salt_context,
-#                 max_age=expiration
-#             )
-#         except:
-#             return False
-#         user = User.query.get(data.get('reset'))
-#         if user is None:
-#             return False
-#         return user
-
-
-# class SocialMedia(db.Model):
-
-#     __tablename__ = 'socials'
-
-#     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-#     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-#     user = db.relationship('User', back_populates='socials', lazy='select')
-#     avatar = db.Column(db.String(20), nullable=False, default='default.jpg')
-#     first_name = db.Column(db.String(50), nullable=True)
-#     last_name = db.Column(db.String(50), nullable=True)
-#     phone_number = db.Column(db.String(50), unique=True, nullable=True)
-#     viber = db.Column(db.String(50), unique=True, nullable=True)
-#     whatsapp = db.Column(db.String(50), unique=True, nullable=True)
-#     instagram = db.Column(db.String(255), unique=True, nullable=True)
-#     telegram = db.Column(db.String(255), unique=True, nullable=True)
-#     youtube = db.Column(db.String(255), unique=True, nullable=True)
-#     website = db.Column(db.String(255), unique=True, nullable=True)
-#     vk = db.Column(db.String(255), unique=True)
-#     about = db.Column(db.String(255), nullable=True)
-
-#     def __repr__(self):
-#         items = {}
-#         for item in vars(__class__):
-#             if not item.startswith('_') and item not in ['uuid', 'user_id']:
-#                 val = getattr(self, item)
-#                 if val is not None:
-#                     items[item] = val
-#         return ', '.join(f'{item}: {val}' for item, val in items.items())
-
-
-# class Post(db.Model):
-
-#     __tablename__ = 'posts'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     title = db.Column(db.String(100), nullable=False)
-#     posted_on = db.Column(db.DateTime, nullable=False, default=func.now())
-#     image = db.Column(db.String(20))
-#     content = db.Column(db.Text, nullable=False)
-#     author_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-#     author = db.relationship('User', back_populates='posts', lazy='select')
-
-#     def __repr__(self):
-#         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
-
-
-# class Entry(db.Model):
-
-#     __tablename__ = 'entries'
-
-#     uuid = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-#     services = db.relationship('Service', secondary=association_table, back_populates='entries', lazy='select')
-#     created_on = db.Column(db.DateTime(timezone=True), nullable=False, server_default=func.now())
-#     date = db.Column(db.Date, nullable=False)
-#     time = db.Column(db.Time(timezone=True), nullable=False)
-#     user_id = db.Column(UUID(as_uuid=True), db.ForeignKey('users.uuid'), nullable=False)
-#     user = db.relationship('User', back_populates='entries', lazy='select')
-
-#     def __repr__(self):
-#         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
-
-
-# class Service(db.Model):
-
-#     __tablename__ = 'services'
-
-#     id = db.Column(db.Integer, primary_key=True)
-#     name = db.Column(db.String(64), unique=True, nullable=False)
-#     duration = db.Column(FLOAT(), nullable=False)
-#     entries = db.relationship('Entry', secondary=association_table, back_populates='services', lazy='dynamic')
-
-#     def __repr__(self):
-#         return self.name

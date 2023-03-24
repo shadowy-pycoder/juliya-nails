@@ -1,18 +1,30 @@
 import re
+from typing import Protocol
 
 import phonenumbers
-from flask_login import current_user
 from flask_wtf import FlaskForm
+import sqlalchemy as sa
 from wtforms import StringField, PasswordField, SubmitField, BooleanField, Field
 from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationError, Regexp
 
-from ..models import User, SocialMedia
-from .. import bcrypt
+from .. import bcrypt, db
+from ..models import User, SocialMedia, current_user
+
+
+class HasValueProtocol(Protocol):
+    @property
+    def password(self) -> Field: ...
+
+    @property
+    def old_password(self) -> Field: ...
+
+    @property
+    def validate_password(self): ...
 
 
 class CustomValidatorsMixin:
 
-    def validate_password(self, password: FlaskForm):
+    def validate_password(self: HasValueProtocol, password: FlaskForm):
         message = 'Please add at least '
         errors = {
             '1 digit': re.search(r'\d', password.data) is None,
@@ -28,12 +40,12 @@ class CustomValidatorsMixin:
         if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):
             raise ValidationError('Entered password is incorrect. Please try again')
 
-    def validate_new_password(self, new_password: FlaskForm):
+    def validate_new_password(self: HasValueProtocol, new_password: FlaskForm) -> None:
         self.validate_password(new_password)
         if new_password.data == self.old_password.data:
             raise ValidationError('Your new password must be different from your old password.')
 
-    def validate_phone_number(self, phone_number):
+    def validate_phone_number(self, phone_number: Field) -> None:
         try:
             p = phonenumbers.parse(phone_number.data)
             if not phonenumbers.is_valid_number(p):
@@ -41,15 +53,15 @@ class CustomValidatorsMixin:
         except (phonenumbers.phonenumberutil.NumberParseException, ValueError):
             raise ValidationError('Invalid phone number')
 
-    def validate_viber(self, viber):
+    def validate_viber(self, viber: Field):
         self.validate_phone_number(viber)
 
-    def validate_whatsapp(self, whatsapp):
+    def validate_whatsapp(self, whatsapp: Field):
         self.validate_phone_number(whatsapp)
 
 
 class IntegrityCheck:
-    def __init__(self, message=None, model=SocialMedia):
+    def __init__(self, message: str | None = None, model=SocialMedia) -> None:
         if not message:
             message = 'Already exists. Please choose a different one.'
         self.message = message
@@ -57,11 +69,13 @@ class IntegrityCheck:
 
     def __call__(self, form: FlaskForm, field: Field):
         if self.model == SocialMedia:
-            query = self.model.query.filter_by(**{field.name: field.data}).first()
+            query = db.session.scalar(sa.select(self.model).filter_by(**{field.name: field.data}))
             if query and query.user_id != current_user.uuid:
                 raise ValidationError(self.message)
         elif self.model == User:
-            query = self.model.query.filter(self.model.username.ilike(field.data)).first()
+            query = db.session.scalar(sa.select(self.model)
+                                      .filter(self.model.username
+                                              .ilike(field.data)))
             if query:
                 raise ValidationError(self.message)
 

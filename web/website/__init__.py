@@ -1,4 +1,3 @@
-from alchemical.flask import Alchemical
 from flask import Flask
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
@@ -6,15 +5,11 @@ from flask_ckeditor import CKEditor
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
-# from flask_sqlalchemy import SQLAlchemy
-from .database import DatabaseManager
 
-
+from .database import SQLAlchemy
 from config import config
 
-db = DatabaseManager()
-# db = SQLAlchemy()
-# db = Alchemical()
+db = SQLAlchemy()
 bcrypt = Bcrypt()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -25,7 +20,7 @@ mail = Mail()
 ckeditor = CKEditor()
 
 
-def create_app(config_name):
+def create_app(config_name) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     db.init_app(app)
@@ -36,8 +31,9 @@ def create_app(config_name):
     mail.init_app(app)
     ckeditor.init_app(app)
 
-    from .main.routes import main, page_not_found
     from .auth.routes import auth
+    from .main.routes import main, page_not_found
+    from .models import add_admin_views, User
     from .users.routes import users
 
     @app.before_request
@@ -47,8 +43,6 @@ def create_app(config_name):
     @app.teardown_appcontext
     def shutdown_session(response_or_exc):
         db.session.remove()
-
-    from .models import add_admin_views, User
 
     @login_manager.user_loader
     def load_user(user_id):

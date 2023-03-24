@@ -1,11 +1,10 @@
 from flask import render_template, Blueprint, flash, redirect, url_for, abort
-from flask_login import current_user
-
 import sqlalchemy as sa
-from .forms import PostForm, EditPostForm
-from .. models import Post
-from .. utils import admin_required, save_image, delete_image
+
 from .. import db
+from .forms import PostForm, EditPostForm
+from .. models import Post, current_user
+from .. utils import admin_required, save_image, delete_image
 
 main = Blueprint('main', __name__)
 
@@ -13,7 +12,6 @@ main = Blueprint('main', __name__)
 @main.route("/")
 @main.route("/home")
 def home():
-    # posts = Post.query.order_by(Post.posted_on.desc()).all()
     posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc()))
     return render_template('home.html', title='Home', posts=posts)
 
@@ -45,8 +43,7 @@ def create_post():
 @admin_required
 def edit_post(post_id):
     form = EditPostForm()
-    # post: Post = Post.query.get_or_404(post_id)
-    post: Post = db.session.get(Post, post_id) or abort(404)
+    post = db.session.get(Post, post_id) or abort(404)
     if form.validate_on_submit():
         if form.delete_image.data:
             image = None
@@ -71,8 +68,7 @@ def edit_post(post_id):
 @main.route("/delete-post/<post_id>", methods=['GET', 'POST'])
 @admin_required
 def delete_post(post_id):
-    # post: Post = Post.query.get_or_404(post_id)
-    post: Post = db.get_or_404(Post, post_id)
+    post = db.session.get(Post, post_id) or abort(404)
     delete_image(post.image)
     db.session.delete(post)
     db.session.commit()
