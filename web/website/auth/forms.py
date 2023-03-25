@@ -1,5 +1,5 @@
 import re
-from typing import Protocol
+from typing import Protocol, Type
 
 import phonenumbers
 from flask_wtf import FlaskForm
@@ -18,13 +18,12 @@ class HasValueProtocol(Protocol):
     @property
     def old_password(self) -> Field: ...
 
-    @property
-    def validate_password(self): ...
+    def validate_password(self, password: Field) -> None: ...
 
 
 class CustomValidatorsMixin:
 
-    def validate_password(self: HasValueProtocol, password: FlaskForm):
+    def validate_password(self: HasValueProtocol, password: Field) -> None:
         message = 'Please add at least '
         errors = {
             '1 digit': re.search(r'\d', password.data) is None,
@@ -36,11 +35,11 @@ class CustomValidatorsMixin:
             if error:
                 self.password.errors.append(message + err_msg)
 
-    def validate_old_password(self, old_password: FlaskForm):
+    def validate_old_password(self, old_password: Field) -> None:
         if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):
             raise ValidationError('Entered password is incorrect. Please try again')
 
-    def validate_new_password(self: HasValueProtocol, new_password: FlaskForm) -> None:
+    def validate_new_password(self: HasValueProtocol, new_password: Field) -> None:
         self.validate_password(new_password)
         if new_password.data == self.old_password.data:
             raise ValidationError('Your new password must be different from your old password.')
@@ -53,21 +52,22 @@ class CustomValidatorsMixin:
         except (phonenumbers.phonenumberutil.NumberParseException, ValueError):
             raise ValidationError('Invalid phone number')
 
-    def validate_viber(self, viber: Field):
+    def validate_viber(self, viber: Field) -> None:
         self.validate_phone_number(viber)
 
-    def validate_whatsapp(self, whatsapp: Field):
+    def validate_whatsapp(self, whatsapp: Field) -> None:
         self.validate_phone_number(whatsapp)
 
 
 class IntegrityCheck:
-    def __init__(self, message: str | None = None, model=SocialMedia) -> None:
+    def __init__(self, message: str | None = None,
+                 model: Type[SocialMedia] = SocialMedia) -> None:
         if not message:
             message = 'Already exists. Please choose a different one.'
         self.message = message
         self.model = model
 
-    def __call__(self, form: FlaskForm, field: Field):
+    def __call__(self, form: FlaskForm, field: Field) -> None:
         if self.model == SocialMedia:
             query = db.session.scalar(sa.select(self.model).filter_by(**{field.name: field.data}))
             if query and query.user_id != current_user.uuid:

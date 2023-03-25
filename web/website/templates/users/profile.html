@@ -8,7 +8,8 @@
                 <div class="card-body text-center">
                     <div class="thumbnail profile-avatar">
                         <img class="account-img"
-                            src="{{ url_for('static', filename='images/profiles/' + socials.avatar) }}" alt="avatar">
+                            src="{{ url_for('static', filename='images/profiles/' + user.socials.avatar) }}"
+                            alt="avatar">
                     </div>
                     <h5 class="my-3">{{ user.username }}</h5>
                     <p class="text-muted mb-1">Full Stack Developer</p>
@@ -34,8 +35,8 @@
                                 <i class="fa-brands fa-youtube fa-xl text-danger"></i>
                                 <p>YouTube</p>
                             </div>
-                            <p class="mb-0">{%if socials.youtube%}<a
-                                    href="{{socials.youtube}}">Youtube</a>{%else%}&nbsp;{%endif%}</p>
+                            <p class="mb-0">{%if user.socials.youtube%}<a
+                                    href="{{user.socials.youtube}}">Youtube</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                             <div>
@@ -43,7 +44,7 @@
                                 <p>VK</p>
                             </div>
                             <p class="mb-0">{%if form.vk%}<a
-                                    href="{{socials.vk}}">{{form.vk}}</a>{%else%}&nbsp;{%endif%}</p>
+                                    href="{{user.socials.vk}}">{{form.vk}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                             <div>
@@ -51,7 +52,7 @@
                                 <p>Telegram</p>
                             </div>
                             <p class="mb-0">{%if form.telegram%}<a
-                                    href="{{socials.telegram}}">@{{form.telegram}}</a>{%else%}&nbsp;{%endif%}</p>
+                                    href="{{user.socials.telegram}}">@{{form.telegram}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                             <div>
@@ -59,15 +60,15 @@
                                 <p>Instagram</p>
                             </div>
                             <p class="mb-0">{%if form.instagram%}<a
-                                    href="{{socials.instagram}}">@{{form.instagram}}</a>{%else%}&nbsp;{%endif%}</p>
+                                    href="{{user.socials.instagram}}">@{{form.instagram}}</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                         <li class="list-group-item d-flex justify-content-between align-items-center p-3">
                             <div>
                                 <i class="fas fa-globe fa-xl text-warning"></i>
                                 <p>Website</p>
                             </div>
-                            <p class="mb-0">{%if socials.website%}<a
-                                    href="{{socials.website}}">Website</a>{%else%}&nbsp;{%endif%}</p>
+                            <p class="mb-0">{%if user.socials.website%}<a
+                                    href="{{user.socials.website}}">Website</a>{%else%}&nbsp;{%endif%}</p>
                         </li>
                     </ul>
                 </div>
@@ -82,8 +83,9 @@
                             <p class="mb-0">Full Name</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">{%if socials.first_name%}{{socials.first_name}}{%endif%}
-                                {%if socials.last_name%}{{socials.last_name}}{%endif%}</p>
+                            <p class="text-muted mb-0">{%if
+                                user.socials.first_name%}{{user.socials.first_name}}{%endif%}
+                                {%if user.socials.last_name%}{{user.socials.last_name}}{%endif%}</p>
                         </div>
                     </div>
                     <hr>
@@ -133,7 +135,7 @@
                             <p class="mb-0">About</p>
                         </div>
                         <div class="col-sm-9">
-                            <p class="text-muted mb-0">{{socials.about}}</p>
+                            <p class="text-muted mb-0">{{user.socials.about}}</p>
                         </div>
                     </div>
                 </div>

@@ -3,6 +3,7 @@ from urllib.parse import urlparse, urljoin
 from flask import abort, flash, render_template, redirect, url_for, request, Blueprint
 from flask_login import login_user, logout_user, login_required
 import sqlalchemy as sa
+from werkzeug.wrappers.response import Response
 
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
@@ -13,14 +14,14 @@ from ..utils import send_email
 auth = Blueprint('auth', __name__)
 
 
-def is_safe_url(target):
+def is_safe_url(target: str | None) -> bool:
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
 
 @auth.route("/register", methods=['GET', 'POST'])
-def register():
+def register() -> Response | str:
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))
     form = RegistrationForm()
@@ -48,7 +49,7 @@ def register():
 
 
 @auth.route("/login", methods=['GET', 'POST'])
-def login():
+def login() -> Response | str:
     if current_user.is_authenticated:
         return redirect(url_for('main.home'))
     form = LoginForm()
@@ -67,14 +68,14 @@ def login():
 
 @auth.route("/logout")
 @login_required
-def logout():
+def logout() -> Response:
     logout_user()
     return redirect(url_for('main.home'))
 
 
-@ auth.route('/confirm/<token>')
-@ login_required
-def confirm_email(token):
+@auth.route('/confirm/<token>')
+@login_required
+def confirm_email(token: str | bytes) -> Response:
     if current_user.confirmed:
         flash('Account already confirmed.', 'info')
     elif current_user.confirm_email_token(token):
@@ -86,17 +87,17 @@ def confirm_email(token):
     return redirect(url_for('main.home'))
 
 
-@ auth.route('/unconfirmed')
-@ login_required
-def unconfirmed():
+@auth.route('/unconfirmed')
+@login_required
+def unconfirmed() -> Response | str:
     if current_user.confirmed:
         return redirect(url_for('main.home'))
     return render_template('auth/unconfirmed.html')
 
 
-@ auth.route('/resend')
-@ login_required
-def resend_confirmation():
+@auth.route('/resend')
+@login_required
+def resend_confirmation() -> Response:
     token = current_user.generate_token()
     confirm_url = url_for('auth.confirm_email', token=token, _external=True)
     template = 'auth/email/confirm_email'
@@ -106,15 +107,14 @@ def resend_confirmation():
     return redirect(url_for('auth.unconfirmed'))
 
 
-@ auth.route('/reset-request', methods=['GET', 'POST'])
-def password_reset_request():
+@auth.route('/reset-request', methods=['GET', 'POST'])
+def password_reset_request() -> Response | str:
     if not current_user.is_anonymous:
         return redirect(url_for('main.home'))
     form = PasswordResetRequestForm()
     if form.validate_on_submit():
         flash('An email with instructions to reset your password has been sent.', 'info')
-        # user: User = User.query.filter_by(email=form.email.data.lower()).first()
-        user = db.session.execute(db.select(User).filter_by(email=form.email.data.lower())).scalar_one()
+        user = db.session.scalar(sa.select(User).filter_by(email=form.email.data.lower()))
         if user:
             token = user.generate_token(
                 context='reset',
@@ -131,12 +131,12 @@ def password_reset_request():
 
 
 @auth.route("/reset-password/<token>", methods=['GET', 'POST'])
-def password_reset_token(token):
+def password_reset_token(token: str | bytes) -> Response | str:
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     form = PasswordResetForm()
     if form.validate_on_submit():
-        user: User = User.reset_password_token(token)
+        user = User.reset_password_token(token)
         if user:
             user.password = form.password.data
             db.session.add(user)

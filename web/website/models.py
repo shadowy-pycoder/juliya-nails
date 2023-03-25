@@ -1,10 +1,11 @@
 from datetime import datetime, date as date_, time as time_
+from typing import Union
 import uuid
 from uuid import UUID as UUID_
 
 from flask import abort, current_app
 from flask_admin.contrib.sqla import ModelView
-from flask_admin.form import SecureForm
+from flask_admin.form import SecureForm, BaseForm
 from flask_login import UserMixin, current_user
 from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
@@ -40,41 +41,41 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     confirmed: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
     confirmed_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(timezone=True), nullable=True)
     admin: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
-    entries: so.WriteOnlyMapped['Entry'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
-    posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade="all, delete-orphan")
+    entries: so.Mapped['Entry'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
+    posts: so.Mapped['Post'] = so.relationship(back_populates='author', cascade="all, delete-orphan")
     socials: so.Mapped['SocialMedia'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"User('{self.username}', '{self.email}')"
 
     @property
-    def password(self):
+    def password(self) -> None:
         raise AttributeError('Password is not a readable attribute')
 
     @password.setter
-    def password(self, candidate):
+    def password(self, candidate: str) -> None:
         self.password_hash = bcrypt.generate_password_hash(candidate).decode('UTF-8')
 
-    def verify_password(self, candidate):
+    def verify_password(self, candidate: str) -> bool:
         return bcrypt.check_password_hash(self.password_hash, candidate)
 
-    def get_id(self):
+    def get_id(self) -> UUID_:
         return self.uuid
 
     def generate_token(
         self,
-        context='confirm',
-        salt_context='confirm-email'
-    ):
+        context: str = 'confirm',
+        salt_context: str = 'confirm-email'
+    ) -> str | bytes:
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         return serializer.dumps({context: str(self.uuid)}, salt=salt_context)
 
     def confirm_email_token(
         self,
-        token,
-        context='confirm',
-        salt_context='confirm-email',
-        expiration=3600
+        token: str | bytes,
+        context: str = 'confirm',
+        salt_context: str = 'confirm-email',
+        expiration: int = 3600
     ) -> bool:
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
@@ -93,10 +94,10 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
 
     @staticmethod
     def reset_password_token(
-        token,
-        salt_context='reset-password',
-        expiration=3600
-    ):
+        token: str | bytes,
+        salt_context: str = 'reset-password',
+        expiration: int = 3600
+    ) -> Union['User', None]:
         serializer = URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
         try:
             data: dict = serializer.loads(
@@ -105,9 +106,9 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
                 max_age=expiration
             )
         except:
-            return False
+            return None
         user = db.session.get(User, (data.get('reset')))
-        return user or False
+        return user
 
 
 class SocialMedia(db.Model):  # type: ignore[name-defined]
@@ -130,9 +131,9 @@ class SocialMedia(db.Model):  # type: ignore[name-defined]
     vk: so.Mapped[str] = so.mapped_column(sa.String(255), unique=True, nullable=True)
     about: so.Mapped[str] = so.mapped_column(sa.String(255), nullable=True)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         items = {}
-        for item in vars(__class__):
+        for item in vars(self.__class__):
             if not item.startswith('_') and item not in ['uuid', 'user_id']:
                 val = getattr(self, item)
                 if val is not None:
@@ -147,12 +148,12 @@ class Post(db.Model):  # type: ignore[name-defined]
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     title: so.Mapped[str] = so.mapped_column(sa.String(100), nullable=False)
     posted_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(timezone=True), nullable=False, default=func.now())
-    image: so.Mapped[str] = so.mapped_column(sa.String(20))
+    image: so.Mapped[str] = so.mapped_column(sa.String(20), nullable=True)
     content: so.Mapped[str] = so.mapped_column(sa.Text, nullable=False)
     author_id: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
     author: so.Mapped['User'] = so.relationship(back_populates='posts')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
 
 
@@ -169,7 +170,7 @@ class Entry(db.Model):  # type: ignore[name-defined]
     user_id: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), sa.ForeignKey('users.uuid'), nullable=False)
     user: so.Mapped['User'] = so.relationship(back_populates='entries')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
 
 
@@ -180,9 +181,9 @@ class Service(db.Model):  # type: ignore[name-defined]
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, nullable=False)
     duration: so.Mapped[float] = so.mapped_column(nullable=False)
-    entries: so.WriteOnlyMapped['Entry'] = so.relationship(secondary=association_table, back_populates='services')
+    entries: so.Mapped['Entry'] = so.relationship(secondary=association_table, back_populates='services')
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self.name
 
 
@@ -192,7 +193,7 @@ class AdminView(ModelView):
     column_hide_backrefs = False
     form_base_class = SecureForm
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
         self.static_folder = 'static'
 
@@ -232,7 +233,7 @@ class UserView(AdminView):
         'socials',
     )
 
-    def on_model_change(self, form, model: User, is_created):
+    def on_model_change(self, form: BaseForm, model: User, is_created: bool) -> None:
         if form.new_password.data != '':
             model.password = form.new_password.data
         elif is_created and form.new_password.data == '':
@@ -264,19 +265,19 @@ class PostView(AdminView):
         }
     }
 
-    def on_form_prefill(self, form, id):
+    def on_form_prefill(self, form: BaseForm, id: Post) -> None:
         self.img = form.image.data
 
-    def on_model_change(self, form, model: Post, is_created):
+    def on_model_change(self, form: BaseForm, model: Post, is_created: bool) -> None:
         if form.new_image.data is not None:
             if not is_created:
                 delete_image(self.img)
             model.image = save_image(form.new_image)
 
-    def on_model_delete(self, model: Post):
+    def on_model_delete(self, model: Post) -> None:
         self.img = model.image
 
-    def after_model_delete(self, model: Post):
+    def after_model_delete(self, model: Post) -> None:
         delete_image(self.img)
 
 
@@ -335,23 +336,23 @@ class SocialMediaView(AdminView):
         }
     }
 
-    def on_form_prefill(self, form, id):
+    def on_form_prefill(self, form: BaseForm, id: SocialMedia) -> None:
         self.img = form.avatar.data
 
-    def on_model_change(self, form, model: SocialMedia, is_created):
+    def on_model_change(self, form: BaseForm, model: SocialMedia, is_created: bool) -> None:
         if form.profile_image.data is not None:
             if not is_created:
                 delete_image(self.img, path='profiles')
             model.avatar = save_image(form.profile_image, path='profiles')
 
-    def on_model_delete(self, model: SocialMedia):
+    def on_model_delete(self, model: SocialMedia) -> None:
         self.img = model.avatar
 
-    def after_model_delete(self, model: SocialMedia):
+    def after_model_delete(self, model: SocialMedia) -> None:
         delete_image(self.img, path='profiles')
 
 
-def add_admin_views(session: scoped_session):
+def add_admin_views(session: scoped_session) -> None:
     from . import admin
     admin.add_view(UserView(User, session))
     admin.add_view(EntryView(Entry, session))

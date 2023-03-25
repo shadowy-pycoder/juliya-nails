@@ -1,12 +1,14 @@
-from urllib.parse import urlparse
+from urllib.parse import urlparse, ParseResult
 
-from flask import flash, render_template, redirect, url_for, session, Blueprint, request, current_app
-from flask_login import current_user, login_required
+from flask import flash, render_template, redirect, url_for, session, Blueprint, request, current_app, abort
+from flask_login import login_required
 import phonenumbers
+import sqlalchemy as sa
+from werkzeug.wrappers.response import Response
 
 from .. import db
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
-from ..models import User, Entry, Service, SocialMedia
+from ..models import User, Entry, Service, SocialMedia, current_user
 from ..utils import send_email, email_confirmed, current_user_required, save_image, delete_image
 
 
@@ -16,13 +18,12 @@ users = Blueprint('users', __name__)
 @users.route("/profile/<username>", methods=['GET'])
 @login_required
 @email_confirmed
-def profile(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    socials: SocialMedia = SocialMedia.query.filter_by(user_id=user.uuid).first()
-    form = {}
+def profile(username: str) -> Response | str:
+    user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
+    form: dict[str, str | None] = {}
     for item in ['phone_number', 'viber', 'whatsapp']:
         try:
-            p = phonenumbers.parse(getattr(socials, item))
+            p = phonenumbers.parse(getattr(user.socials, item))
         except phonenumbers.phonenumberutil.NumberParseException:
             form[item] = None
             continue
@@ -30,18 +31,18 @@ def profile(username):
         form[item] = formatted_number
     for item in ['vk', 'telegram', 'instagram']:
         form[item] = None
-        url = getattr(socials, item)
+        url = getattr(user.socials, item)
         if url:
-            parsed = urlparse(url=url)
+            parsed: ParseResult = urlparse(url=url)
             form[item] = parsed.path.strip('/')
-    return render_template('users/profile.html', title='Profile', socials=socials, user=user, form=form)
+    return render_template('users/profile.html', title='Profile', user=user, form=form)
 
 
 @users.route("/profile/<username>/change-password", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
-def change_password_request(username):
+def change_password_request(username: str) -> Response | str:
     form = PasswordChangeForm()
     if form.validate_on_submit():
         current_user.password = form.new_password.data
@@ -58,7 +59,7 @@ def change_password_request(username):
 @login_required
 @email_confirmed
 @current_user_required
-def change_email_request(username):
+def change_email_request(username: str) -> Response | str:
     form = EmailChangeForm()
     if form.validate_on_submit():
         session['new_email'] = form.email.data.lower()
@@ -74,7 +75,7 @@ def change_email_request(username):
 
 @users.route("profile/<username>/change-email/<token>", methods=['GET', 'POST'])
 @login_required
-def change_email(username, token):
+def change_email(username: str, token: str | bytes) -> Response:
     if current_user.confirm_email_token(token, context='change', salt_context='change-email'):
         new_email = session.get('new_email')
         if new_email is not None:
@@ -95,7 +96,7 @@ def change_email(username, token):
 @login_required
 @email_confirmed
 @current_user_required
-def create_entry(username):
+def create_entry(username: str) -> Response | str:
     user = User.query.filter_by(username=username).first_or_404()
     services = Service.query.all()
     form = EntryForm()
@@ -120,7 +121,7 @@ def create_entry(username):
 @login_required
 @email_confirmed
 @current_user_required
-def my_entries(username):
+def my_entries(username: str) -> str:
     entries = current_user.entries.all()
     services = Service.query.all()
     return render_template('users/my_entries.html', title='Profile', entries=entries, services=services)
@@ -130,7 +131,7 @@ def my_entries(username):
 @login_required
 @email_confirmed
 @current_user_required
-def update_profile(username):
+def update_profile(username: str) -> Response | str:
     user = User.query.filter_by(username=username).first_or_404()
     socials: SocialMedia = SocialMedia.query.filter_by(user_id=current_user.uuid).first()
     form = UpdateProfileForm()

@@ -10,14 +10,14 @@ class SQLAlchemy:
     def __init__(self) -> None:
         self.Model: DeclarativeMeta = declarative_base()
 
-    def init_app(self, app: Flask):
+    def init_app(self, app: Flask) -> None:
         self.create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
         self.create_scoped_session()
 
-    def create_engine(self, sqlalchemy_database_uri: str):
+    def create_engine(self, sqlalchemy_database_uri: str) -> None:
         self.engine = create_engine(sqlalchemy_database_uri)
 
-    def create_scoped_session(self):
+    def create_scoped_session(self) -> None:
         self.session = scoped_session(
             sessionmaker(autocommit=False, bind=self.engine)
         )

@@ -1,3 +1,5 @@
+from typing import Type
+
 from flask import Flask
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
@@ -5,6 +7,7 @@ from flask_ckeditor import CKEditor
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
+from werkzeug.wrappers.response import Response
 
 from .database import SQLAlchemy
 from config import config
@@ -20,7 +23,7 @@ mail = Mail()
 ckeditor = CKEditor()
 
 
-def create_app(config_name) -> Flask:
+def create_app(config_name: str) -> Flask:
     app = Flask(__name__)
     app.config.from_object(config[config_name])
     db.init_app(app)
@@ -33,19 +36,19 @@ def create_app(config_name) -> Flask:
 
     from .auth.routes import auth
     from .main.routes import main, page_not_found
-    from .models import add_admin_views, User
+    from .models import add_admin_views, User, UUID_
     from .users.routes import users
 
     @app.before_request
-    def before_request():
+    def before_request() -> None:
         db.session()
 
     @app.teardown_appcontext
-    def shutdown_session(response_or_exc):
+    def shutdown_session(response_or_exc) -> None:  # type: ignore[no-untyped-def]
         db.session.remove()
 
     @login_manager.user_loader
-    def load_user(user_id):
+    def load_user(user_id: UUID_) -> User | None:
         return db.session.get(User, user_id)
 
     add_admin_views(db.session)
