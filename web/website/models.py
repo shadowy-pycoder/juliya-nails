@@ -41,8 +41,8 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     confirmed: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
     confirmed_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(timezone=True), nullable=True)
     admin: so.Mapped[bool] = so.mapped_column(nullable=False, default=False)
-    entries: so.Mapped['Entry'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
-    posts: so.Mapped['Post'] = so.relationship(back_populates='author', cascade="all, delete-orphan")
+    entries: so.WriteOnlyMapped['Entry'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
+    posts: so.WriteOnlyMapped['Post'] = so.relationship(back_populates='author', cascade="all, delete-orphan")
     socials: so.Mapped['SocialMedia'] = so.relationship(back_populates='user', cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
@@ -162,7 +162,7 @@ class Entry(db.Model):  # type: ignore[name-defined]
     __tablename__ = 'entries'
 
     uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    services: so.Mapped['Service'] = so.relationship(secondary=association_table, back_populates='entries')
+    services: so.Mapped[list['Service']] = so.relationship(secondary=association_table, back_populates='entries')
     created_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(
         timezone=True), nullable=False, server_default=func.now())
     date: so.Mapped[date_] = so.mapped_column(sa.Date, nullable=False)
@@ -181,7 +181,7 @@ class Service(db.Model):  # type: ignore[name-defined]
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, nullable=False)
     duration: so.Mapped[float] = so.mapped_column(nullable=False)
-    entries: so.Mapped['Entry'] = so.relationship(secondary=association_table, back_populates='services')
+    entries: so.WriteOnlyMapped['Entry'] = so.relationship(secondary=association_table, back_populates='services')
 
     def __repr__(self) -> str:
         return self.name
@@ -211,6 +211,7 @@ class UserView(AdminView):
                    'confirmed',
                    'confirmed_on',
                    'admin',
+                   'socials'
                    )
     column_searchable_list = ('username', 'email')
     column_default_sort = ('admin', True)
@@ -228,9 +229,6 @@ class UserView(AdminView):
         'confirmed',
         'confirmed_on',
         'admin',
-        'entries',
-        'posts',
-        'socials',
     )
 
     def on_model_change(self, form: BaseForm, model: User, is_created: bool) -> None:
@@ -282,8 +280,9 @@ class PostView(AdminView):
 
 
 class ServiceView(AdminView):
-    column_list = ('id', 'name', 'duration',)
+    column_list = ('id', 'name', 'duration')
     column_editable_list = ('name', 'duration')
+    form_columns = ('name', 'duration')
 
 
 class EntryView(AdminView):

@@ -68,8 +68,8 @@ def edit_post(post_id: int) -> Response | str:
     return render_template('edit_post.html', title='Edit Post', legend='Edit Post', form=form)
 
 
-@ main.route("/delete-post/<int:post_id>", methods=['GET', 'POST'])
-@ admin_required
+@main.route("/delete-post/<int:post_id>", methods=['GET', 'POST'])
+@admin_required
 def delete_post(post_id: int) -> Response:
     post = db.session.get(Post, post_id) or abort(404)
     delete_image(post.image)

@@ -43,7 +43,6 @@ def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
             flash('Please confirm your account!', 'warning')
             return redirect(url_for('users.unconfirmed'))
         return func(*args, **kwargs)
-
     return decorated_function
 
 

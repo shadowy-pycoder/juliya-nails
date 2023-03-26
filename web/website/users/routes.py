@@ -97,13 +97,13 @@ def change_email(username: str, token: str | bytes) -> Response:
 @email_confirmed
 @current_user_required
 def create_entry(username: str) -> Response | str:
-    user = User.query.filter_by(username=username).first_or_404()
-    services = Service.query.all()
+    user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
+    services = db.session.scalars(sa.select(Service)).all()
     form = EntryForm()
     form.services.choices = [service.name for service in services]
     if form.validate_on_submit():
         service_types = [
-            Service.query.filter_by(name=service_type).first()
+            db.session.execute(sa.select(Service).filter_by(name=service_type)).scalar_one()
             for service_type in form.services.data
         ]
         entry = Entry(date=form.date.data,
@@ -122,9 +122,10 @@ def create_entry(username: str) -> Response | str:
 @email_confirmed
 @current_user_required
 def my_entries(username: str) -> str:
-    entries = current_user.entries.all()
-    services = Service.query.all()
-    return render_template('users/my_entries.html', title='Profile', entries=entries, services=services)
+    entries = db.session.scalars(current_user.entries
+                                 .select()
+                                 .order_by(Entry.date.desc(), Entry.time.desc())).all()
+    return render_template('users/my_entries.html', title='Profile', entries=entries)
 
 
 @users.route("/profile/<username>/update", methods=['GET', 'POST'])
@@ -132,8 +133,7 @@ def my_entries(username: str) -> str:
 @email_confirmed
 @current_user_required
 def update_profile(username: str) -> Response | str:
-    user = User.query.filter_by(username=username).first_or_404()
-    socials: SocialMedia = SocialMedia.query.filter_by(user_id=current_user.uuid).first()
+    user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
     form = UpdateProfileForm()
     if form.validate_on_submit():
         for field in form._fields.values():
@@ -143,24 +143,24 @@ def update_profile(username: str) -> Response | str:
                 elif field.data and field.name in ['first_name', 'last_name']:
                     field.data = field.data.capitalize()
                 elif form.delete_avatar.data and field.name in ['avatar']:
-                    delete_image(socials.avatar, path='profiles')
+                    delete_image(user.socials.avatar, path='profiles')
                     field.data = current_app.config['DEFAULT_AVATAR']
                 elif field.data and field.name in ['avatar']:
-                    delete_image(socials.avatar, path='profiles')
+                    delete_image(user.socials.avatar, path='profiles')
                     field.data = save_image(form.avatar, path='profiles')
                 elif field.name in ['avatar']:
-                    field.data = socials.avatar
+                    field.data = user.socials.avatar
                 elif not field.data:
                     field.data = None
-                setattr(socials, field.name, field.data)
-                db.session.add(socials)
+                setattr(user.socials, field.name, field.data)
+        db.session.add(user.socials)
         db.session.commit()
         flash('Your profile has been updated.', 'success')
         return redirect(url_for('users.profile', username=current_user.username))
     elif request.method == 'GET':
         for field in form._fields.values():
             if field.name not in ['delete_avatar', 'submit', 'csrf_token']:
-                field.data = getattr(socials, field.name)
+                field.data = getattr(user.socials, field.name)
     return render_template('users/update_profile.html',
                            title='Update Profile',
                            legend='Update Profile',

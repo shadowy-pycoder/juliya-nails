@@ -1,6 +1,6 @@
 from __future__ import division, print_function
 import pytest
-import JuliyaNails
+import website
 
 
 def test_basic():

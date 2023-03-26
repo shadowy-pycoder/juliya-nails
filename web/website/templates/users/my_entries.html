@@ -15,14 +15,7 @@
     <li>{{entry.user_id}}</li>
 </ul>
 {% endfor %}
-<ul>
-    {% for service in services %}
-    <li>{% for entry in service.entries.all() %}</li>
-    {{entry.user}}
-    {{service.entries.all()}}
-    {% endfor %}
-    {% endfor %}
-</ul>
+
 
 
 {% endblock content %}
