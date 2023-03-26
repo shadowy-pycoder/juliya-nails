@@ -14,13 +14,14 @@ import sqlalchemy.orm as so
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.sql import func
+from werkzeug.local import LocalProxy
 from wtforms import StringField
 from wtforms.validators import ValidationError
 
 from . import db, bcrypt
-from .utils import save_image, delete_image, current_user
+from .utils import save_image, delete_image
 
-current_user: 'User' = current_user
+current_user: Union['User', LocalProxy] = current_user
 
 association_table = sa.Table('association_table', db.Model.metadata,
                              sa.Column('entry_id', UUID(as_uuid=True), sa.ForeignKey('entries.uuid')),

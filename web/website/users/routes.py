@@ -4,11 +4,12 @@ from flask import flash, render_template, redirect, url_for, session, Blueprint,
 from flask_login import login_required
 import phonenumbers
 import sqlalchemy as sa
+from sqlalchemy.sql import func
 from werkzeug.wrappers.response import Response
 
 from .. import db
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
-from ..models import User, Entry, Service, SocialMedia, current_user
+from ..models import User, Entry, Service, current_user
 from ..utils import send_email, email_confirmed, current_user_required, save_image, delete_image
 
 
@@ -20,6 +21,20 @@ users = Blueprint('users', __name__)
 @email_confirmed
 def profile(username: str) -> Response | str:
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
+    prev_entry = db.session.scalar(
+        user.entries.select()
+        .filter(sa.or_(
+            Entry.date < func.current_date(), sa.and_(
+                Entry.date == func.current_date(),
+                Entry.time <= func.current_time())))
+        .order_by(Entry.date.desc(), Entry.time.desc()))
+    next_entry = db.session.scalar(
+        user.entries.select()
+        .filter(sa.or_(
+            Entry.date > func.current_date(), sa.and_(
+                Entry.date == func.current_date(),
+                Entry.time > func.current_time())))
+        .order_by(Entry.date, Entry.time))
     form: dict[str, str | None] = {}
     for item in ['phone_number', 'viber', 'whatsapp']:
         try:
@@ -35,7 +50,12 @@ def profile(username: str) -> Response | str:
         if url:
             parsed: ParseResult = urlparse(url=url)
             form[item] = parsed.path.strip('/')
-    return render_template('users/profile.html', title='Profile', user=user, form=form)
+    return render_template('users/profile.html',
+                           title='Profile',
+                           user=user,
+                           form=form,
+                           prev_entry=prev_entry,
+                           next_entry=next_entry)
 
 
 @users.route("/profile/<username>/change-password", methods=['GET', 'POST'])

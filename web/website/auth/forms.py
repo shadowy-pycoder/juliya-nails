@@ -12,8 +12,6 @@ from ..models import User, SocialMedia, current_user
 
 
 class HasValueProtocol(Protocol):
-    @property
-    def password(self) -> Field: ...
 
     @property
     def old_password(self) -> Field: ...
@@ -23,7 +21,7 @@ class HasValueProtocol(Protocol):
 
 class CustomValidatorsMixin:
 
-    def validate_password(self: HasValueProtocol, password: Field) -> None:
+    def validate_password(self, password: Field) -> None:
         message = 'Please add at least '
         errors = {
             '1 digit': re.search(r'\d', password.data) is None,
@@ -33,7 +31,7 @@ class CustomValidatorsMixin:
         }
         for err_msg, error in errors.items():
             if error:
-                self.password.errors.append(message + err_msg)
+                password.errors.append(message + err_msg)
 
     def validate_old_password(self, old_password: Field) -> None:
         if not bcrypt.check_password_hash(current_user.password_hash, old_password.data):
