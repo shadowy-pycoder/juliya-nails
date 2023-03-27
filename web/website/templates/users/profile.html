@@ -168,7 +168,7 @@
                             <p class="mb-4"><span class="text-primary font-italic me-1">Next</span> Entry</p>
                             <p class="mb-1" style="font-size: .77rem;">Web Design</p>
                             <div style="min-height: 200px;">
-                                {% if prev_entry %}
+                                {% if next_entry %}
                                 <div style="width: 80%">
                                     <p>Your next entry will be on {{next_entry.date.strftime('%d %B %Y,
                                         %A')}}{{next_entry.time.strftime(' %H:%M')}}</p>

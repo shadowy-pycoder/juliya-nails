@@ -14,6 +14,12 @@
     <li>{{entry.time}}</li>
     <li>{{entry.user_id}}</li>
 </ul>
+<a class="btn btn-outline-primary ms-1"
+    href="{{url_for('users.edit_entry', username=current_user.username, entry_id=entry.uuid)}}" role="button">Edit
+    Entry</a>
+<a href="{{ url_for('users.cancel_entry', username=current_user.username, entry_id=entry.uuid)}}"
+    class="btn btn-outline-danger" role="button">Cancel
+    Entry</a>
 {% endfor %}
 
 

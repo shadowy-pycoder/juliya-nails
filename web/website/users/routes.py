@@ -4,6 +4,7 @@ from flask import flash, render_template, redirect, url_for, session, Blueprint,
 from flask_login import login_required
 import phonenumbers
 import sqlalchemy as sa
+from sqlalchemy.exc import DataError, NoResultFound
 from sqlalchemy.sql import func
 from werkzeug.wrappers.response import Response
 
@@ -16,7 +17,7 @@ from ..utils import send_email, email_confirmed, current_user_required, save_ima
 users = Blueprint('users', __name__)
 
 
-@users.route("/profile/<username>", methods=['GET'])
+@users.route("/<username>/profile", methods=['GET'])
 @login_required
 @email_confirmed
 def profile(username: str) -> Response | str:
@@ -58,7 +59,7 @@ def profile(username: str) -> Response | str:
                            next_entry=next_entry)
 
 
-@users.route("/profile/<username>/change-password", methods=['GET', 'POST'])
+@users.route("/<username>/profile/change-password", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
@@ -75,7 +76,7 @@ def change_password_request(username: str) -> Response | str:
                            legend='Change Password', form=form)
 
 
-@users.route("/profile/<username>/change-email", methods=['GET', 'POST'])
+@users.route("/<username>/profile/change-email", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
@@ -93,8 +94,10 @@ def change_email_request(username: str) -> Response | str:
     return render_template('users/change_email.html', title='Change Email', legend='Change Email', form=form)
 
 
-@users.route("profile/<username>/change-email/<token>", methods=['GET', 'POST'])
+@users.route("/<username>/profile/change-email/<token>", methods=['GET', 'POST'])
 @login_required
+@email_confirmed
+@current_user_required
 def change_email(username: str, token: str | bytes) -> Response:
     if current_user.confirm_email_token(token, context='change', salt_context='change-email'):
         new_email = session.get('new_email')
@@ -103,16 +106,16 @@ def change_email(username: str, token: str | bytes) -> Response:
             db.session.add(current_user)
             db.session.commit()
             flash('Your email address has been updated.', 'success')
-            return redirect(url_for('users.profile', username=current_user.username))
+            return redirect(url_for('users.profile', username=username))
         else:
             flash('Something went wrong. Please try again.', 'danger')
-            return redirect(url_for('users.change_email_request', username=current_user.username))
+            return redirect(url_for('users.change_email_request', username=username))
     else:
         flash('That is an invalid or expired token', 'warning')
-        return redirect(url_for('users.change_email_request', username=current_user.username))
+        return redirect(url_for('users.change_email_request', username=username))
 
 
-@users.route("/profile/<username>/create-entry", methods=['GET', 'POST'])
+@users.route("/<username>/profile/create-entry", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
@@ -120,11 +123,11 @@ def create_entry(username: str) -> Response | str:
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
     services = db.session.scalars(sa.select(Service)).all()
     form = EntryForm()
-    form.services.choices = [service.name for service in services]
+    form.services.choices = [(service.id, service.name) for service in services]
     if form.validate_on_submit():
         service_types = [
-            db.session.execute(sa.select(Service).filter_by(name=service_type)).scalar_one()
-            for service_type in form.services.data
+            db.session.execute(sa.select(Service).filter_by(id=service_id)).scalar_one()
+            for service_id in form.services.data
         ]
         entry = Entry(date=form.date.data,
                       time=form.time.data,
@@ -133,11 +136,60 @@ def create_entry(username: str) -> Response | str:
         db.session.add(entry)
         db.session.commit()
         flash('New entry has been created.', 'success')
-        return redirect(url_for('users.profile', username=current_user.username))
+        return redirect(url_for('users.my_entries', username=username))
     return render_template('users/create_entry.html', title='Profile', form=form, user=user)
 
 
-@users.route("/profile/<username>/my-entries", methods=['GET', 'POST'])
+@users.route("/<username>/profile/edit-entry/<entry_id>", methods=['GET', 'POST'])
+@login_required
+@email_confirmed
+@current_user_required
+def edit_entry(username: str, entry_id: str) -> Response | str:
+    try:
+        entry = db.session.execute(sa.select(Entry).filter_by(uuid=entry_id)).scalar_one()
+    except (DataError, NoResultFound):
+        abort(404)
+    if entry.user.username != username:
+        abort(404)
+    user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
+    services = db.session.scalars(sa.select(Service)).all()
+    form = EntryForm()
+    form.services.choices = [(service.id, service.name) for service in services]
+    if form.validate_on_submit():
+        service_types = [
+            db.session.execute(sa.select(Service).filter_by(id=service_id)).scalar_one()
+            for service_id in form.services.data
+        ]
+        entry.date = form.date.data
+        entry.time = form.time.data
+        entry.services.clear()
+        entry.services.extend(service_types)
+        db.session.commit()
+        flash('Your entry has been updated.', 'success')
+        return redirect(url_for('users.my_entries', username=username))
+    elif request.method == 'GET':
+        pass
+    return render_template('users/edit_entry.html', title='Profile', form=form, user=user)
+
+
+@users.route("/<username>/profile/cancel-entry/<entry_id>", methods=['GET', 'POST'])
+@login_required
+@email_confirmed
+@current_user_required
+def cancel_entry(username: str, entry_id: str) -> Response:
+    try:
+        entry = db.session.execute(sa.select(Entry).filter_by(uuid=entry_id)).scalar_one()
+    except (DataError, NoResultFound):
+        abort(404)
+    if entry.user.username != username:
+        abort(404)
+    db.session.delete(entry)
+    db.session.commit()
+    flash('Your entry has been cancelled!', 'danger')
+    return redirect(url_for('users.my_entries', username=username))
+
+
+@users.route("/<username>/profile/my-entries", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
@@ -148,7 +200,7 @@ def my_entries(username: str) -> str:
     return render_template('users/my_entries.html', title='Profile', entries=entries)
 
 
-@users.route("/profile/<username>/update", methods=['GET', 'POST'])
+@users.route("/<username>/profile/update", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
@@ -176,7 +228,7 @@ def update_profile(username: str) -> Response | str:
         db.session.add(user.socials)
         db.session.commit()
         flash('Your profile has been updated.', 'success')
-        return redirect(url_for('users.profile', username=current_user.username))
+        return redirect(url_for('users.profile', username=username))
     elif request.method == 'GET':
         for field in form._fields.values():
             if field.name not in ['delete_avatar', 'submit', 'csrf_token']:

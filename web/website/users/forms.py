@@ -27,7 +27,9 @@ class EmailChangeForm(CustomValidatorsMixin, FlaskForm):
 class EntryForm(CustomValidatorsMixin, FlaskForm):
 
     services = SelectMultipleField('Choose Service', validators=[
-                                   DataRequired()], id='multiselect', render_kw={"data-placeholder": "Choose service..."})
+                                   DataRequired()
+                                   ], id='multiselect', render_kw={"data-placeholder": "Choose service..."},
+                                   choices=[], coerce=int)
     date = DateField('local', validators=[DataRequired()], id='datepicker')
     time = TimeField('Time', validators=[DataRequired()], id='timepicker')
     submit = SubmitField('Update Email')
@@ -35,22 +37,47 @@ class EntryForm(CustomValidatorsMixin, FlaskForm):
 
 class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
     youtube = URLField('Youtube',
-                       validators=[Optional(), Length(max=255), Regexp('(https?:\/\/)?(?:www.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
-                                                                       message='Please enter a valid YouTube link'), IntegrityCheck()],
+                       validators=[
+                           Optional(),
+                           Length(max=255),
+                           Regexp('(https?:\/\/)?(?:www.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
+                                  message='Please enter a valid YouTube link'),
+                           IntegrityCheck()
+                       ],
                        render_kw={"placeholder": "https://www.youtube.com/channel/"})
-    website = URLField('Website', validators=[Optional(), Length(max=255), IntegrityCheck()],
+    website = URLField('Website',
+                       validators=[
+                           Optional(),
+                           Length(max=255),
+                           IntegrityCheck()
+                       ],
                        render_kw={"placeholder": "https://www.example.com/"})
     vk = URLField('VK',
-                  validators=[Optional(), Length(max=255), Regexp('^(https?:\/\/)?(?:www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+$',
-                                                                  message='Please enter a valid VK link'), IntegrityCheck()],
+                  validators=[
+                      Optional(),
+                      Length(max=255),
+                      Regexp('^(https?:\/\/)?(?:www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+$',
+                             message='Please enter a valid VK link'),
+                      IntegrityCheck()
+                  ],
                   render_kw={"placeholder": "https://vk.com/username"})
     telegram = URLField('Telegram',
-                        validators=[Optional(), Length(max=255), Regexp('(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
-                                                                        message='Please enter a valid Telegram link'), IntegrityCheck()],
+                        validators=[
+                            Optional(),
+                            Length(max=255),
+                            Regexp('(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
+                                   message='Please enter a valid Telegram link'),
+                            IntegrityCheck()
+                        ],
                         render_kw={"placeholder": "https://t.me/username"})
     instagram = URLField('Instagram',
-                         validators=[Optional(), Length(max=255), Regexp('(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
-                                                                         message='Please enter a valid Instagram link'), IntegrityCheck()],
+                         validators=[
+                             Optional(),
+                             Length(max=255),
+                             Regexp('(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
+                                    message='Please enter a valid Instagram link'),
+                             IntegrityCheck()
+                         ],
                          render_kw={"placeholder": "https://instagram.com/username"})
     about = TextAreaField('About', validators=[Optional(), Length(max=255)],
                           render_kw={"placeholder": "Enter information about you"})

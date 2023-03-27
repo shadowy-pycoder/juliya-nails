@@ -3,7 +3,7 @@ from functools import wraps
 import os
 import secrets
 from threading import Thread
-from typing import ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar, Any
 
 from flask import current_app, flash, redirect, url_for, render_template, Flask, abort
 from flask_mail import Message
@@ -57,10 +57,10 @@ def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
 
 def current_user_required(func: Callable[..., R]) -> Callable[..., R | Response]:
     @wraps(func)
-    def decorated_function(username: str) -> R | Response:
+    def decorated_function(username: str, *args: Any, **kwargs: Any) -> R | Response:
         if username != current_user.username:
-            return redirect(url_for(f'users.{func.__name__}', username=current_user.username))
-        return func(username)
+            return redirect(url_for(f'users.{func.__name__}', username=current_user.username, **kwargs))
+        return func(username, *args, **kwargs)
     return decorated_function
 
 

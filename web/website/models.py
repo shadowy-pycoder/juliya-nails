@@ -34,8 +34,8 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     __tablename__ = 'users'
 
     uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    username: so.Mapped[str] = so.mapped_column(sa.String(20), unique=True, nullable=False)
-    email: so.Mapped[str] = so.mapped_column(sa.String(100), unique=True, nullable=False)
+    username: so.Mapped[str] = so.mapped_column(sa.String(20), unique=True, nullable=False, index=True)
+    email: so.Mapped[str] = so.mapped_column(sa.String(100), unique=True, nullable=False, index=True)
     password_hash: so.Mapped[str] = so.mapped_column(sa.String(60), nullable=False)
     registered_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(
         timezone=True), nullable=False, server_default=func.now())
