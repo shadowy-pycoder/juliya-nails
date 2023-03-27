@@ -24,6 +24,7 @@ def send_async_email(app: Flask, msg: Message) -> None:
 
 
 def send_email(to: str, subject: str, template: str, **kwargs: str) -> Thread:
+    app = current_app._get_current_object()  # type: ignore[attr-defined]
     msg = Message(
         subject,
         recipients=[to],
@@ -31,7 +32,7 @@ def send_email(to: str, subject: str, template: str, **kwargs: str) -> Thread:
         sender=current_app.config['MAIL_DEFAULT_SENDER'])
     msg.body = render_template(template + '.txt', **kwargs)
     msg.html = render_template(template + '.html', **kwargs)
-    thr = Thread(target=send_async_email, args=[current_app, msg])
+    thr = Thread(target=send_async_email, args=[app, msg])
     thr.start()
     return thr
 

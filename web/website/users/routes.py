@@ -185,7 +185,7 @@ def cancel_entry(username: str, entry_id: str) -> Response:
         abort(404)
     db.session.delete(entry)
     db.session.commit()
-    flash('Your entry has been cancelled!', 'danger')
+    flash('Your entry has been cancelled!', 'info')
     return redirect(url_for('users.my_entries', username=username))
 
 
