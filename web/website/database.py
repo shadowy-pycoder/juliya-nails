@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm import scoped_session, sessionmaker, declarative_base
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.sql.schema import MetaData
 
 
 class SQLAlchemy:
@@ -21,3 +22,10 @@ class SQLAlchemy:
         self.session = scoped_session(
             sessionmaker(autocommit=False, bind=self.engine)
         )
+
+    def get_engine(self) -> Engine:
+        return self.engine
+
+    @property
+    def metadata(self) -> MetaData:
+        return self.Model.metadata

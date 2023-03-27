@@ -23,7 +23,7 @@ from .utils import save_image, delete_image
 
 current_user: Union['User', LocalProxy] = current_user
 
-association_table = sa.Table('association_table', db.Model.metadata,
+association_table = sa.Table('association_table', db.metadata,
                              sa.Column('entry_id', UUID(as_uuid=True), sa.ForeignKey(
                                  'entries.uuid', ondelete='CASCADE')),
                              sa.Column('service_id', sa.Integer, sa.ForeignKey(
