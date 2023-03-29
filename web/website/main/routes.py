@@ -1,6 +1,6 @@
 from typing import Type
 
-from flask import render_template, Blueprint, flash, redirect, url_for, abort
+from flask import render_template, Blueprint, flash, redirect, url_for, abort, request, jsonify
 import sqlalchemy as sa
 from werkzeug.wrappers.response import Response
 
@@ -24,7 +24,12 @@ def about() -> str:
     return render_template('about.html', title='About')
 
 
-def page_not_found(e: Type[Exception] | int) -> tuple[str, int]:
+def page_not_found(e: Type[Exception] | int) -> Response | tuple[str, int]:
+    if (request.accept_mimetypes.accept_json and
+            not request.accept_mimetypes.accept_html):
+        response = jsonify({'error': 'not found'})
+        response.status_code = 404
+        return response
     return render_template('404.html', title='Page Not Found'), 404
 
 

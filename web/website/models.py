@@ -1,9 +1,9 @@
 from datetime import datetime, date as date_, time as time_
-from typing import Union
+from typing import Union, TypeVar, Type
 import uuid
 from uuid import UUID as UUID_
 
-from flask import abort, current_app
+from flask import abort, current_app, url_for
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.form import SecureForm, BaseForm
 from flask_login import UserMixin, current_user
@@ -12,6 +12,7 @@ from itsdangerous import URLSafeTimedSerializer
 import sqlalchemy as sa
 import sqlalchemy.orm as so
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.exc import DataError
 from sqlalchemy.orm import scoped_session
 from sqlalchemy.sql import func
 from werkzeug.local import LocalProxy
@@ -20,6 +21,8 @@ from wtforms.validators import ValidationError
 
 from . import db, bcrypt
 from .utils import save_image, delete_image
+
+T = TypeVar('T', bound=db.Model)  # type: ignore[name-defined]
 
 current_user: Union['User', LocalProxy] = current_user
 
@@ -60,6 +63,20 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     @password.setter
     def password(self, candidate: str) -> None:
         self.password_hash = bcrypt.generate_password_hash(candidate).decode('UTF-8')
+
+    def to_json(self) -> dict[str, object]:
+        json_user = {
+            'uuid': self.uuid,
+            'url': url_for('api.get_user', user_id=self.uuid),
+            'username': self.username,
+            'registered_on': self.registered_on,
+            'confirmed': self.confirmed,
+            'confirmed_on': self.confirmed_on,
+            'posts': url_for('api.get_user_posts', user_id=self.uuid),
+            'entries': url_for('api.get_user_entries', user_id=self.uuid),
+            'socials': url_for('api.get_user_socials', user_id=self.uuid)
+        }
+        return json_user
 
     def verify_password(self, candidate: str) -> bool:
         return bcrypt.check_password_hash(self.password_hash, candidate)
@@ -146,6 +163,26 @@ class SocialMedia(db.Model):  # type: ignore[name-defined]
                     items[item] = val
         return ', '.join(f'{item}: {val}' for item, val in items.items())
 
+    def to_json(self) -> dict[str, object]:
+        json_social = {
+            'uuid': self.uuid,
+            'url': url_for('api.get_social', social_id=self.uuid),
+            'user_url': url_for('api.get_user', user_id=self.user_id),
+            'avatar': self.avatar,
+            'first_name': self.first_name,
+            'last_name': self.last_name,
+            'phone_number': self.phone_number,
+            'viber': self.viber,
+            'whatsapp': self.whatsapp,
+            'instagram': self.instagram,
+            'telegram': self.telegram,
+            'youtube': self.youtube,
+            'website': self.website,
+            'vk': self.vk,
+            'about': self.about,
+        }
+        return json_social
+
 
 class Post(db.Model):  # type: ignore[name-defined]
 
@@ -162,6 +199,18 @@ class Post(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
+
+    def to_json(self) -> dict[str, object]:
+        json_post = {
+            'id': self.id,
+            'url': url_for('api.get_post', post_id=self.id),
+            'title': self.title,
+            'content': self.content,
+            'image': self.image,
+            'posted_on': self.posted_on,
+            'author': url_for('api.get_user', user_id=self.author_id),
+        }
+        return json_post
 
 
 class Entry(db.Model):  # type: ignore[name-defined]
@@ -182,6 +231,19 @@ class Entry(db.Model):  # type: ignore[name-defined]
     def __repr__(self) -> str:
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
 
+    def to_json(self) -> dict[str, object]:
+        json_entry = {
+            'uuid': self.uuid,
+            'url': url_for('api.get_entry', entry_id=self.uuid),
+            'services': url_for('api.get_entry_services', entry_id=self.uuid),
+            'created_on': self.created_on,
+            'date': self.date,
+            'time': str(self.time),
+            'user_url': url_for('api.get_user', user_id=self.user_id),
+            'user': self.user.username,
+        }
+        return json_entry
+
 
 class Service(db.Model):  # type: ignore[name-defined]
 
@@ -195,6 +257,16 @@ class Service(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return self.name
+
+    def to_json(self) -> dict[str, object]:
+        json_service = {
+            'id': self.id,
+            'url': url_for('api.get_service', service_id=self.id),
+            'name': self.name,
+            'duration': self.duration,
+            'entries': url_for('api.get_service_entries', service_id=self.id),
+        }
+        return json_service
 
 
 class AdminView(ModelView):
@@ -368,3 +440,11 @@ def add_admin_views(session: scoped_session) -> None:
     admin.add_view(PostView(Post, session))
     admin.add_view(ServiceView(Service, session))
     admin.add_view(SocialMediaView(SocialMedia, session))
+
+
+def get_or_404(model: Type[T], id: int | str) -> T:
+    try:
+        result = db.session.get(model, id)
+    except DataError:
+        abort(404)
+    return result if result else abort(404)

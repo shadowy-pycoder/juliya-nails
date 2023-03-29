@@ -4,13 +4,12 @@ from flask import flash, render_template, redirect, url_for, session, Blueprint,
 from flask_login import login_required
 import phonenumbers
 import sqlalchemy as sa
-from sqlalchemy.exc import DataError, NoResultFound
 from sqlalchemy.sql import func
 from werkzeug.wrappers.response import Response
 
 from .. import db
 from .forms import PasswordChangeForm, EmailChangeForm, EntryForm, UpdateProfileForm
-from ..models import User, Entry, Service, current_user
+from ..models import User, Entry, Service, current_user, get_or_404
 from ..utils import send_email, email_confirmed, current_user_required, save_image, delete_image
 
 
@@ -145,10 +144,7 @@ def create_entry(username: str) -> Response | str:
 @email_confirmed
 @current_user_required
 def edit_entry(username: str, entry_id: str) -> Response | str:
-    try:
-        entry = db.session.execute(sa.select(Entry).filter_by(uuid=entry_id)).scalar_one()
-    except (DataError, NoResultFound):
-        abort(404)
+    entry = get_or_404(Entry, entry_id)
     if entry.user.username != username:
         abort(404)
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
@@ -177,10 +173,7 @@ def edit_entry(username: str, entry_id: str) -> Response | str:
 @email_confirmed
 @current_user_required
 def cancel_entry(username: str, entry_id: str) -> Response:
-    try:
-        entry = db.session.execute(sa.select(Entry).filter_by(uuid=entry_id)).scalar_one()
-    except (DataError, NoResultFound):
-        abort(404)
+    entry = get_or_404(Entry, entry_id)
     if entry.user.username != username:
         abort(404)
     db.session.delete(entry)

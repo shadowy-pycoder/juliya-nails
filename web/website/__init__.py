@@ -31,6 +31,7 @@ def create_app(config_name: str) -> Flask:
     mail.init_app(app)
     ckeditor.init_app(app)
 
+    from .api.v1 import api as api_v1
     from .auth.routes import auth
     from .main.routes import main, page_not_found
     from .models import add_admin_views, User, UUID_
@@ -49,8 +50,9 @@ def create_app(config_name: str) -> Flask:
         return db.session.get(User, user_id)
 
     add_admin_views(db.session)
-    app.register_blueprint(main, url_prefix='/')
+    app.register_blueprint(api_v1, url_prefix='/api/v1')
     app.register_blueprint(auth, url_prefix='/auth')
+    app.register_blueprint(main, url_prefix='/')
     app.register_blueprint(users, url_prefix='/users')
     app.register_error_handler(404, page_not_found)
     return app
