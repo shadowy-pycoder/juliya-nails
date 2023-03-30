@@ -2,6 +2,7 @@ from typing import Type
 
 from flask import render_template, Blueprint, flash, redirect, url_for, abort, request, jsonify
 import sqlalchemy as sa
+from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers.response import Response
 
 from .. import db
@@ -24,11 +25,15 @@ def about() -> str:
     return render_template('about.html', title='About')
 
 
-def page_not_found(e: Type[Exception] | int) -> Response | tuple[str, int]:
-    if (request.accept_mimetypes.accept_json and
-            not request.accept_mimetypes.accept_html):
-        response = jsonify({'error': 'not found'})
+def page_not_found(error: HTTPException) -> Response | tuple[str, int]:
+    if request.mimetype == 'application/json':
+        response = jsonify({
+            'code': error.code,
+            'message': error.name,
+            'description': error.description,
+        })
         response.status_code = 404
+        response.content_type = 'application/json'
         return response
     return render_template('404.html', title='Page Not Found'), 404
 

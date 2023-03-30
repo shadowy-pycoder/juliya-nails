@@ -101,8 +101,9 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
         return True
 
     @staticmethod
-    def reset_password_token(
+    def verify_token(
         token: str | bytes,
+        context: str = 'reset',
         salt_context: str = 'reset-password',
         expiration: int = 3600
     ) -> Union['User', None]:
@@ -115,7 +116,7 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
             )
         except:
             return None
-        user = db.session.get(User, (data.get('reset')))
+        user = db.session.get(User, (data.get(context)))
         return user
 
 
@@ -209,16 +210,6 @@ class Service(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return self.name
-
-    def to_json(self) -> dict[str, object]:
-        json_service = {
-            'id': self.id,
-            'url': url_for('api.get_service', service_id=self.id),
-            'name': self.name,
-            'duration': self.duration,
-            'entries': url_for('api.get_service_entries', service_id=self.id),
-        }
-        return json_service
 
 
 class AdminView(ModelView):

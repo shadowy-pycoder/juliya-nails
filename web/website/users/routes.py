@@ -1,4 +1,5 @@
 from urllib.parse import urlparse, ParseResult
+from uuid import UUID
 
 from flask import flash, render_template, redirect, url_for, session, Blueprint, request, current_app, abort
 from flask_login import login_required
@@ -139,11 +140,11 @@ def create_entry(username: str) -> Response | str:
     return render_template('users/create_entry.html', title='Profile', form=form, user=user)
 
 
-@users.route("/<username>/profile/edit-entry/<entry_id>", methods=['GET', 'POST'])
+@users.route("/<username>/profile/edit-entry/<uuid:entry_id>", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
-def edit_entry(username: str, entry_id: str) -> Response | str:
+def edit_entry(username: str, entry_id: UUID) -> Response | str:
     entry = get_or_404(Entry, entry_id)
     if entry.user.username != username:
         abort(404)
@@ -168,11 +169,11 @@ def edit_entry(username: str, entry_id: str) -> Response | str:
     return render_template('users/edit_entry.html', title='Profile', form=form, user=user)
 
 
-@users.route("/<username>/profile/cancel-entry/<entry_id>", methods=['GET', 'POST'])
+@users.route("/<username>/profile/cancel-entry/<uuid:entry_id>", methods=['GET', 'POST'])
 @login_required
 @email_confirmed
 @current_user_required
-def cancel_entry(username: str, entry_id: str) -> Response:
+def cancel_entry(username: str, entry_id: UUID) -> Response:
     entry = get_or_404(Entry, entry_id)
     if entry.user.username != username:
         abort(404)

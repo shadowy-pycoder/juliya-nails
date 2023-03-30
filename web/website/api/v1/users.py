@@ -8,6 +8,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.sql.schema import Sequence
 
 from . import api
+from .auth import token_auth
 from ... import db
 from ...models import User, Post, Entry, SocialMedia, get_or_404
 from ...schemas import UserSchema
@@ -35,6 +36,7 @@ def create_user(kwargs: dict[str, str]) -> User:
 
 
 @api.route('/users', methods=['GET'])
+@authenticate(token_auth)
 @response(users_schema)
 def get_users() -> Sequence:
     """Get all users"""

@@ -177,3 +177,7 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     name = ma.auto_field(required=True)
     duration = ma.auto_field(reuired=True)
     entries = ma.URLFor('api.get_service_entries', values={'service_id': '<id>'}, dump_only=True)
+
+
+class TokenShema(ma.Schema):  # type: ignore[name-defined]
+    token = ma.String()

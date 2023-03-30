@@ -136,7 +136,7 @@ def password_reset_token(token: str | bytes) -> Response | str:
         return redirect(url_for('home'))
     form = PasswordResetForm()
     if form.validate_on_submit():
-        user = User.reset_password_token(token)
+        user = User.verify_token(token)
         if user:
             user.password = form.password.data
             db.session.add(user)

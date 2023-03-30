@@ -4,7 +4,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
 from . import api
-from . authentication import basic_auth
+from .auth import basic_auth
 from ... import db
 from ...models import Post, get_or_404
 from ...schemas import PostSchema
