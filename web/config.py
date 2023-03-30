@@ -20,6 +20,9 @@ class Config:
     MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
     UPLOAD_FOLDER = 'static/images/'
     DEFAULT_AVATAR = 'default.jpg'
+    APIFAIRY_TITLE = 'JuliyaNails API'
+    APIFAIRY_VERSION = '1.0'
+    APIFAIRY_UI = 'elements'
 
 
 class DevelopmentConfig(Config):

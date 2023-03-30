@@ -6,6 +6,7 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, Regexp, Opt
 
 from ..auth.forms import CustomValidatorsMixin, IntegrityCheck
 from ..models import User
+from ..utils import PATTERNS
 
 
 class PasswordChangeForm(CustomValidatorsMixin, FlaskForm):
@@ -40,7 +41,7 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                        validators=[
                            Optional(),
                            Length(max=255),
-                           Regexp('(https?:\/\/)?(?:www.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
+                           Regexp(PATTERNS['youtube'],
                                   message='Please enter a valid YouTube link'),
                            IntegrityCheck()
                        ],
@@ -56,7 +57,7 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                   validators=[
                       Optional(),
                       Length(max=255),
-                      Regexp('^(https?:\/\/)?(?:www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+$',
+                      Regexp(PATTERNS['vk'],
                              message='Please enter a valid VK link'),
                       IntegrityCheck()
                   ],
@@ -65,7 +66,7 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                         validators=[
                             Optional(),
                             Length(max=255),
-                            Regexp('(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
+                            Regexp(PATTERNS['telegram'],
                                    message='Please enter a valid Telegram link'),
                             IntegrityCheck()
                         ],
@@ -74,7 +75,7 @@ class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):
                          validators=[
                              Optional(),
                              Length(max=255),
-                             Regexp('(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
+                             Regexp(PATTERNS['instagram'],
                                     message='Please enter a valid Instagram link'),
                              IntegrityCheck()
                          ],

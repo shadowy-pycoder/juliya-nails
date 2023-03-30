@@ -64,20 +64,6 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
     def password(self, candidate: str) -> None:
         self.password_hash = bcrypt.generate_password_hash(candidate).decode('UTF-8')
 
-    def to_json(self) -> dict[str, object]:
-        json_user = {
-            'uuid': self.uuid,
-            'url': url_for('api.get_user', user_id=self.uuid),
-            'username': self.username,
-            'registered_on': self.registered_on,
-            'confirmed': self.confirmed,
-            'confirmed_on': self.confirmed_on,
-            'posts': url_for('api.get_user_posts', user_id=self.uuid),
-            'entries': url_for('api.get_user_entries', user_id=self.uuid),
-            'socials': url_for('api.get_user_socials', user_id=self.uuid)
-        }
-        return json_user
-
     def verify_password(self, candidate: str) -> bool:
         return bcrypt.check_password_hash(self.password_hash, candidate)
 
@@ -155,19 +141,10 @@ class SocialMedia(db.Model):  # type: ignore[name-defined]
     about: so.Mapped[str] = so.mapped_column(sa.String(255), nullable=True)
 
     def __repr__(self) -> str:
-        items = {}
-        for item in vars(self.__class__):
-            if not item.startswith('_') and item not in ['uuid', 'user_id']:
-                val = getattr(self, item)
-                if val is not None:
-                    items[item] = val
-        return ', '.join(f'{item}: {val}' for item, val in items.items())
+        return ", ".join(f'{item}: {val}' for item, val in self.to_dict().items() if val is not None)
 
-    def to_json(self) -> dict[str, object]:
-        json_social = {
-            'uuid': self.uuid,
-            'url': url_for('api.get_social', social_id=self.uuid),
-            'user_url': url_for('api.get_user', user_id=self.user_id),
+    def to_dict(self) -> dict[str, str]:
+        dict_social = {
             'avatar': self.avatar,
             'first_name': self.first_name,
             'last_name': self.last_name,
@@ -181,7 +158,7 @@ class SocialMedia(db.Model):  # type: ignore[name-defined]
             'vk': self.vk,
             'about': self.about,
         }
-        return json_social
+        return dict_social
 
 
 class Post(db.Model):  # type: ignore[name-defined]
@@ -199,18 +176,6 @@ class Post(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f'Post({self.id}, "{self.title}", {self.posted_on}, {self.author.username})'
-
-    def to_json(self) -> dict[str, object]:
-        json_post = {
-            'id': self.id,
-            'url': url_for('api.get_post', post_id=self.id),
-            'title': self.title,
-            'content': self.content,
-            'image': self.image,
-            'posted_on': self.posted_on,
-            'author': url_for('api.get_user', user_id=self.author_id),
-        }
-        return json_post
 
 
 class Entry(db.Model):  # type: ignore[name-defined]
@@ -230,19 +195,6 @@ class Entry(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
-
-    def to_json(self) -> dict[str, object]:
-        json_entry = {
-            'uuid': self.uuid,
-            'url': url_for('api.get_entry', entry_id=self.uuid),
-            'services': url_for('api.get_entry_services', entry_id=self.uuid),
-            'created_on': self.created_on,
-            'date': self.date,
-            'time': str(self.time),
-            'user_url': url_for('api.get_user', user_id=self.user_id),
-            'user': self.user.username,
-        }
-        return json_entry
 
 
 class Service(db.Model):  # type: ignore[name-defined]
@@ -442,7 +394,7 @@ def add_admin_views(session: scoped_session) -> None:
     admin.add_view(SocialMediaView(SocialMedia, session))
 
 
-def get_or_404(model: Type[T], id: int | str) -> T:
+def get_or_404(model: Type[T], id: int | UUID_) -> T:
     try:
         result = db.session.get(model, id)
     except DataError:

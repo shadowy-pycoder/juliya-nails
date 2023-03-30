@@ -1,19 +1,28 @@
+from apifairy import authenticate, body, response, other_responses
 from flask import jsonify
-from flask.wrappers import Response
 import sqlalchemy as sa
+from sqlalchemy.sql.schema import Sequence
 
 from . import api
+from . authentication import basic_auth
 from ... import db
 from ...models import Post, get_or_404
+from ...schemas import PostSchema
+
+post_schema = PostSchema()
+posts_schema = PostSchema(many=True)
 
 
-@api.route('/posts/')
-def get_posts() -> Response:
+@api.route('/posts')
+@response(posts_schema)
+def get_posts() -> Sequence:
     posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc())).all()
-    return jsonify({'posts': [post.to_json() for post in posts]})
+    return posts  # type: ignore[return-value]
 
 
 @api.route('/posts/<int:post_id>')
-def get_post(post_id: int) -> Response:
+@response(post_schema)
+@other_responses({404: 'Post not found'})
+def get_post(post_id: int) -> Post:
     post = get_or_404(Post, post_id)
-    return jsonify(post.to_json())
+    return post

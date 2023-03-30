@@ -1,9 +1,11 @@
+from apifairy import APIFairy
 from flask import Flask
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
 from flask_ckeditor import CKEditor
 from flask_login import LoginManager
 from flask_mail import Mail
+from flask_marshmallow import Marshmallow
 from flask_migrate import Migrate
 
 from .database import SQLAlchemy
@@ -18,6 +20,8 @@ login_manager.login_message_category = 'info'
 admin = Admin(name='Admin Panel', template_mode='bootstrap4')
 mail = Mail()
 ckeditor = CKEditor()
+apifairy = APIFairy()
+ma = Marshmallow()
 
 
 def create_app(config_name: str) -> Flask:
@@ -30,6 +34,8 @@ def create_app(config_name: str) -> Flask:
     admin.init_app(app)
     mail.init_app(app)
     ckeditor.init_app(app)
+    apifairy.init_app(app)
+    ma.init_app(app)
 
     from .api.v1 import api as api_v1
     from .auth.routes import auth
