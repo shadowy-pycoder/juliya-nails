@@ -109,66 +109,6 @@ class SocialMediaSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         PATTERNS['vk'], error='Invalid value for VK')])
     about = ma.auto_field()
 
-    # @validates('first_name')
-    # def validate_first_name(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['name'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for first name')
-
-    # @validates('last_name')
-    # def validate_last_name(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['name'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for last name')
-
-    # @validates('phone_number')
-    # def validate_phone_number(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['phone_number'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for phone number')
-
-    # @validates('viber')
-    # def validate_viber(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['phone_number'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for Viber')
-
-    # @validates('whatsapp')
-    # def validate_whatsapp(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['phone_number'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for WhatsApp')
-
-    # @validates('instagram')
-    # def validate_instagram(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['instagram'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for Instagram')
-
-    # @validates('telegram')
-    # def validate_telegram(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['telegram'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for Telegram')
-
-    # @validates('youtube')
-    # def validate_youtube(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['youtube'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for YouTube')
-
-    # @validates('website')
-    # def validate_website(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['website'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for website')
-
-    # @validates('vk')
-    # def validate_vk(self, value: str) -> None:
-    #     pattern = re.compile(PATTERNS['vk'])
-    #     if not pattern.match(value):
-    #         raise ValidationError('Invalid value for VK')
-
 
 class PostSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:

@@ -1,27 +1,28 @@
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses
-from flask import jsonify
+from flask import jsonify, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
-from . import api
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
 from ...schemas import PostSchema
+
+for_posts = Blueprint('for_posts', __name__)
 
 post_schema = PostSchema()
 posts_schema = PostSchema(many=True)
 
 
-@api.route('/posts/')
+@for_posts.route('/posts/')
 @response(posts_schema)
 def get_posts() -> Sequence:
     posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc())).all()
     return posts  # type: ignore[return-value]
 
 
-@api.route('/posts/<int:post_id>')
+@for_posts.route('/posts/<int:post_id>')
 @response(post_schema)
 @other_responses({404: 'Post not found'})
 def get_post(post_id: int) -> Post:
@@ -29,7 +30,7 @@ def get_post(post_id: int) -> Post:
     return post
 
 
-@api.route('/users/<uuid:user_id>/posts')
+@for_posts.route('/users/<uuid:user_id>/posts')
 @authenticate(token_auth)
 @response(posts_schema)
 def get_user_posts(user_id: UUID) -> Sequence:
@@ -38,7 +39,7 @@ def get_user_posts(user_id: UUID) -> Sequence:
     return posts  # type: ignore[return-value]
 
 
-@api.route('/me/posts', methods=['GET'])
+@for_posts.route('/me/posts', methods=['GET'])
 @authenticate(token_auth)
 @response(posts_schema)
 def my_posts() -> Sequence:

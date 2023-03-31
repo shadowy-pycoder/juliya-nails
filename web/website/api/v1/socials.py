@@ -1,21 +1,22 @@
 from uuid import UUID
 
 from apifairy import authenticate, body, response
-from flask import jsonify, abort
+from flask import jsonify, abort, Blueprint
 from flask.wrappers import Response
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
-from . import api
 from ... import db, token_auth
 from ...models import SocialMedia, User, get_or_404
 from ...schemas import SocialMediaSchema
+
+for_socials = Blueprint('for_socials', __name__)
 
 social_schema = SocialMediaSchema()
 socials_schema = SocialMediaSchema(many=True)
 
 
-@api.route('/socials/', methods=['GET'])
+@for_socials.route('/socials/', methods=['GET'])
 @authenticate(token_auth)
 @response(socials_schema)
 def get_socials() -> Sequence:
@@ -24,7 +25,7 @@ def get_socials() -> Sequence:
     return socials  # type: ignore[return-value]
 
 
-@api.route('/socials/<uuid:social_id>', methods=['GET'])
+@for_socials.route('/socials/<uuid:social_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(social_schema)
 def get_social(social_id: UUID) -> SocialMedia:
@@ -33,7 +34,7 @@ def get_social(social_id: UUID) -> SocialMedia:
     return social
 
 
-@api.route('/users/<uuid:user_id>/socials')
+@for_socials.route('/users/<uuid:user_id>/socials')
 @authenticate(token_auth)
 @response(social_schema)
 def get_user_socials(user_id: UUID) -> SocialMedia:
@@ -41,7 +42,7 @@ def get_user_socials(user_id: UUID) -> SocialMedia:
     return user.socials
 
 
-@api.route('/socials/<uuid:social_id>', methods=['PUT'])
+@for_socials.route('/socials/<uuid:social_id>', methods=['PUT'])
 @authenticate(token_auth)
 @body(social_schema)
 @response(social_schema)
@@ -55,7 +56,7 @@ def update_social(kwargs: dict, social_id: UUID) -> SocialMedia:
     return social
 
 
-@api.route('/me/socials', methods=['GET'])
+@for_socials.route('/me/socials', methods=['GET'])
 @authenticate(token_auth)
 @response(social_schema)
 def my_socials() -> SocialMedia:
@@ -64,7 +65,7 @@ def my_socials() -> SocialMedia:
     return user.socials  # type: ignore[return-value]
 
 
-@api.route('/me/socials', methods=['PUT'])
+@for_socials.route('/me/socials', methods=['PUT'])
 @authenticate(token_auth)
 @body(social_schema)
 @response(social_schema)

@@ -1,23 +1,24 @@
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses
-from flask import abort
+from flask import abort, Blueprint
 from flask.wrappers import Response
 import sqlalchemy as sa
 from sqlalchemy.sql import func
 from sqlalchemy.sql.schema import Sequence
 
-from . import api
 from ... import db, token_auth
 from ...models import User, SocialMedia, get_or_404
 from ...schemas import UserSchema, UpdateUserSchema
+
+for_users = Blueprint('for_users', __name__)
 
 user_schema = UserSchema()
 users_schema = UserSchema(many=True)
 update_user_schema = UpdateUserSchema(partial=True)
 
 
-@api.route('/users/', methods=['POST'])
+@for_users.route('/users/', methods=['POST'])
 @body(user_schema)
 @response(user_schema, 201)
 def create_user(kwargs: dict[str, str]) -> User:
@@ -35,7 +36,7 @@ def create_user(kwargs: dict[str, str]) -> User:
     return user
 
 
-@api.route('/users/', methods=['GET'])
+@for_users.route('/users/', methods=['GET'])
 @authenticate(token_auth)
 @response(users_schema)
 def get_users() -> Sequence:
@@ -44,7 +45,7 @@ def get_users() -> Sequence:
     return users  # type: ignore[return-value]
 
 
-@api.route('/users/<uuid:user_id>', methods=['GET'])
+@for_users.route('/users/<uuid:user_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(user_schema)
 @other_responses({404: 'User not found'})
@@ -54,7 +55,7 @@ def get_user(user_id: UUID) -> User:
     return user
 
 
-@api.route('/users/<username>')
+@for_users.route('/users/<username>')
 @authenticate(token_auth)
 @response(user_schema)
 @other_responses({404: 'User not found'})
@@ -64,7 +65,7 @@ def get_username(username: str) -> User:
     return user
 
 
-@api.route('/me', methods=['GET'])
+@for_users.route('/me', methods=['GET'])
 @authenticate(token_auth)
 @response(user_schema)
 def me() -> User:
@@ -72,7 +73,7 @@ def me() -> User:
     return token_auth.current_user()
 
 
-@api.route('/me', methods=['PUT'])
+@for_users.route('/me', methods=['PUT'])
 @authenticate(token_auth)
 @body(update_user_schema)
 @response(user_schema)
