@@ -125,14 +125,14 @@ def create_entry(username: str) -> Response | str:
     form = EntryForm()
     form.services.choices = [(service.id, service.name) for service in services]
     if form.validate_on_submit():
-        service_types = [
+        service_types = {
             db.session.execute(sa.select(Service).filter_by(id=service_id)).scalar_one()
             for service_id in form.services.data
-        ]
+        }
         entry = Entry(date=form.date.data,
                       time=form.time.data,
                       user_id=current_user.uuid)
-        entry.services.extend(service_types)
+        entry.services.update(service_types)
         db.session.add(entry)
         db.session.commit()
         flash('New entry has been created.', 'success')
@@ -153,14 +153,13 @@ def edit_entry(username: str, entry_id: UUID) -> Response | str:
     form = EntryForm()
     form.services.choices = [(service.id, service.name) for service in services]
     if form.validate_on_submit():
-        service_types = [
+        service_types = {
             db.session.execute(sa.select(Service).filter_by(id=service_id)).scalar_one()
             for service_id in form.services.data
-        ]
+        }
         entry.date = form.date.data
         entry.time = form.time.data
-        entry.services.clear()
-        entry.services.extend(service_types)
+        entry.services.update(service_types)
         db.session.commit()
         flash('Your entry has been updated.', 'success')
         return redirect(url_for('users.my_entries', username=username))

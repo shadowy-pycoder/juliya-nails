@@ -33,7 +33,13 @@ association_table = sa.Table('association_table', db.metadata,
                                  'services.id', ondelete='SET NULL')))
 
 
-class User(UserMixin, db.Model):  # type: ignore[name-defined]
+class UpdateMixin:
+    def update(self, data: dict) -> None:
+        for attr, value in data.items():
+            setattr(self, attr, value)
+
+
+class User(UserMixin, UpdateMixin, db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'users'
 
@@ -120,7 +126,7 @@ class User(UserMixin, db.Model):  # type: ignore[name-defined]
         return user
 
 
-class SocialMedia(db.Model):  # type: ignore[name-defined]
+class SocialMedia(UpdateMixin, db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'socials'
 
@@ -184,7 +190,7 @@ class Entry(db.Model):  # type: ignore[name-defined]
     __tablename__ = 'entries'
 
     uuid: so.Mapped[UUID_] = so.mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    services: so.Mapped[list['Service']] = so.relationship(
+    services: so.Mapped[set['Service']] = so.relationship(
         secondary=association_table, back_populates='entries')
     created_on: so.Mapped[datetime] = so.mapped_column(sa.DateTime(
         timezone=True), nullable=False, server_default=func.now())

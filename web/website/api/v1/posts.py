@@ -1,19 +1,20 @@
+from uuid import UUID
+
 from apifairy import authenticate, body, response, other_responses
 from flask import jsonify
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
 from . import api
-from .auth import basic_auth
-from ... import db
-from ...models import Post, get_or_404
+from ... import db, token_auth
+from ...models import Post, User, get_or_404
 from ...schemas import PostSchema
 
 post_schema = PostSchema()
 posts_schema = PostSchema(many=True)
 
 
-@api.route('/posts')
+@api.route('/posts/')
 @response(posts_schema)
 def get_posts() -> Sequence:
     posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc())).all()
@@ -26,3 +27,22 @@ def get_posts() -> Sequence:
 def get_post(post_id: int) -> Post:
     post = get_or_404(Post, post_id)
     return post
+
+
+@api.route('/users/<uuid:user_id>/posts')
+@authenticate(token_auth)
+@response(posts_schema)
+def get_user_posts(user_id: UUID) -> Sequence:
+    user = get_or_404(User, user_id)
+    posts = db.session.scalars(user.posts.select().order_by(Post.posted_on.desc())).all()
+    return posts  # type: ignore[return-value]
+
+
+@api.route('/me/posts', methods=['GET'])
+@authenticate(token_auth)
+@response(posts_schema)
+def my_posts() -> Sequence:
+    """Retrieve my posts"""
+    user: User = token_auth.current_user()
+    posts = db.session.scalars(user.posts.select().order_by(Post.posted_on.desc())).all()
+    return posts  # type: ignore[return-value]

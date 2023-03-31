@@ -5,7 +5,7 @@ import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
 from . import api
-from ... import db
+from ... import db, token_auth
 from ...models import Service, Entry, get_or_404
 from ...schemas import ServiceSchema
 
@@ -14,7 +14,7 @@ service_schema = ServiceSchema()
 services_schema = ServiceSchema(many=True)
 
 
-@api.route('/services')
+@api.route('/services/')
 @response(services_schema)
 def get_services() -> Sequence:
     services = db.session.scalars(sa.select(Service)).all()
@@ -31,7 +31,7 @@ def get_service(service_id: int) -> Response:
 from .entries import entries_schema  # nopep8
 
 
-@api.route('/services/<int:service_id>/entries/')
+@api.route('/services/<int:service_id>/entries')
 @response(entries_schema)
 def get_service_entries(service_id: int) -> Sequence:
     service = get_or_404(Service, service_id)

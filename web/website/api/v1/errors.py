@@ -1,10 +1,10 @@
-from flask import jsonify
+from flask import jsonify, current_app
 from flask.wrappers import Response
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized, Forbidden
 
 from . import api
-from .auth import basic_auth, token_auth
+from ... import basic_auth, token_auth
 
 
 @basic_auth.error_handler
@@ -61,11 +61,18 @@ def integrity_error(error: IntegrityError) -> Response:
 
 @api.errorhandler(SQLAlchemyError)
 def sqlalchemy_error(error: SQLAlchemyError) -> Response:
-    response = jsonify({
-        'code': InternalServerError.code,
-        'message': InternalServerError().name,
-        'description': InternalServerError.description,
-    })
+    if current_app.config['DEBUG'] is True:
+        response = jsonify({
+            'code': InternalServerError.code,
+            'message': 'Database error',
+            'description': str(error),
+        })
+    else:
+        response = jsonify({
+            'code': InternalServerError.code,
+            'message': InternalServerError().name,
+            'description': InternalServerError.description,
+        })
     response.status_code = 500
     response.content_type = 'application/json'
     return response

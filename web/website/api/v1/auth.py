@@ -1,14 +1,13 @@
 from apifairy import authenticate, body, response
-from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
+
 import sqlalchemy as sa
 
 from . import api
-from ... import db
+from ... import db, basic_auth, token_auth
 from ...models import User
 from ...schemas import TokenShema
 
-basic_auth = HTTPBasicAuth()
-token_auth = HTTPTokenAuth()
+
 token_schema = TokenShema()
 
 

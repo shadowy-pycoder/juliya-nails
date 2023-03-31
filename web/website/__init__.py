@@ -3,6 +3,7 @@ from flask import Flask
 from flask_admin import Admin
 from flask_bcrypt import Bcrypt
 from flask_ckeditor import CKEditor
+from flask_httpauth import HTTPBasicAuth, HTTPTokenAuth
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_marshmallow import Marshmallow
@@ -22,6 +23,8 @@ mail = Mail()
 ckeditor = CKEditor()
 apifairy = APIFairy()
 ma = Marshmallow()
+basic_auth = HTTPBasicAuth()
+token_auth = HTTPTokenAuth()
 
 
 def create_app(config_name: str) -> Flask:

@@ -24,7 +24,7 @@ PATTERNS = {
     'telegram': r'(?:@|(?:(?:(?:https?://)?t(?:elegram)?)\.me\/))(\w{4,})',
     'instagram': r'(?:(?:http|https):\/\/)?(?:www.)?(?:instagram.com|instagr.am|instagr.com)\/(\w+)',
     'phone_number': r'^\+(?:[0-9] ?){6,14}[0-9]$',
-    'name': r'^([A-ZÀ-ÿ][-,a-z.\']+[]*)+'
+    'name': r'([A-ZÀ-ÿ][-,a-z. \']+[ ]*)+'
 }
 
 
@@ -48,7 +48,7 @@ def send_email(to: str, subject: str, template: str, **kwargs: str) -> Thread:
 
 
 def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
-    @ wraps(func)
+    @wraps(func)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> R | Response:
         if not current_user.confirmed:
             flash('Please confirm your account!', 'warning')
@@ -58,7 +58,7 @@ def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
 
 
 def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
-    @ wraps(func)
+    @wraps(func)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> R | Response:
         if current_user.is_anonymous or not current_user.admin:
             return abort(404)
@@ -67,7 +67,7 @@ def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
 
 
 def current_user_required(func: Callable[..., R]) -> Callable[..., R | Response]:
-    @ wraps(func)
+    @wraps(func)
     def decorated_function(username: str, *args: Any, **kwargs: Any) -> R | Response:
         if username != current_user.username:
             return redirect(url_for(f'users.{func.__name__}', username=current_user.username, **kwargs))
