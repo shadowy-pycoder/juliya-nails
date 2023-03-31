@@ -15,25 +15,16 @@ services_schema = ServiceSchema(many=True)
 
 
 @for_services.route('/services/')
+@authenticate(token_auth)
 @response(services_schema)
-def get_services() -> Sequence:
+def get_all() -> Sequence:
     services = db.session.scalars(sa.select(Service)).all()
     return services  # type: ignore[return-value]
 
 
 @for_services.route('/services/<int:service_id>')
+@authenticate(token_auth)
 @response(service_schema)
-def get_service(service_id: int) -> Response:
+def get_one(service_id: int) -> Response:
     service = get_or_404(Service, service_id)
     return service
-
-
-from .entries import entries_schema  # nopep8
-
-
-@for_services.route('/services/<int:service_id>/entries')
-@response(entries_schema)
-def get_service_entries(service_id: int) -> Sequence:
-    service = get_or_404(Service, service_id)
-    entries = db.session.scalars(service.entries.select().order_by(Entry.date.desc(), Entry.time.desc())).all()
-    return entries  # type: ignore[return-value]

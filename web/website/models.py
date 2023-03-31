@@ -168,7 +168,7 @@ class SocialMedia(UpdateMixin, db.Model):  # type: ignore[name-defined]
         return dict_social
 
 
-class Post(db.Model):  # type: ignore[name-defined]
+class Post(UpdateMixin, db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'posts'
 
@@ -204,7 +204,7 @@ class Entry(db.Model):  # type: ignore[name-defined]
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
 
 
-class Service(db.Model):  # type: ignore[name-defined]
+class Service(UpdateMixin, db.Model):  # type: ignore[name-defined]
 
     __tablename__ = 'services'
 

@@ -19,7 +19,7 @@ socials_schema = SocialMediaSchema(many=True)
 @for_socials.route('/socials/', methods=['GET'])
 @authenticate(token_auth)
 @response(socials_schema)
-def get_socials() -> Sequence:
+def get_all() -> Sequence:
     """Retrieve all socials"""
     socials = db.session.scalars(sa.select(SocialMedia)).all()
     return socials  # type: ignore[return-value]
@@ -28,8 +28,8 @@ def get_socials() -> Sequence:
 @for_socials.route('/socials/<uuid:social_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(social_schema)
-def get_social(social_id: UUID) -> SocialMedia:
-    """Retrieve user's social page"""
+def get_one(social_id: UUID) -> SocialMedia:
+    """Retrieve social page"""
     social = get_or_404(SocialMedia, social_id)
     return social
 

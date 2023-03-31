@@ -2,7 +2,6 @@ from apifairy import authenticate, body, response
 from flask import Blueprint
 import sqlalchemy as sa
 
-from . import api
 from ... import db, basic_auth, token_auth
 from ...models import User
 from ...schemas import TokenShema

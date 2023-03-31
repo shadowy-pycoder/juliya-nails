@@ -16,16 +16,16 @@ class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         model = User
 
     uuid = ma.UUID(dump_only=True)
-    url = ma.URLFor('api.get_user', values={'user_id': '<uuid>'}, dump_only=True)
+    url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
     username = ma.auto_field(required=True, validate=[validate.Length(min=2, max=20)], dump_only=True)
     email = ma.Email(required=True, validate=[validate.Length(max=100)], load_only=True)
     password = ma.String(required=True, validate=validate.Length(min=8), load_only=True)
     registered_on = ma.auto_field(dump_only=True)
     confirmed = ma.auto_field(dump_only=True)
     confirmed_on = ma.auto_field(dump_only=True)
-    posts = ma.URLFor('api.get_user_posts', values={'user_id': '<uuid>'}, dump_only=True)
-    entries = ma.URLFor('api.get_user_entries', values={'user_id': '<uuid>'}, dump_only=True)
-    socials = ma.URLFor('api.get_user_socials', values={'user_id': '<uuid>'}, dump_only=True)
+    posts = ma.URLFor('api.for_posts.get_user_posts', values={'user_id': '<uuid>'}, dump_only=True)
+    entries = ma.URLFor('api.for_entries.get_user_entries', values={'user_id': '<uuid>'}, dump_only=True)
+    socials = ma.URLFor('api.for_socials.get_user_socials', values={'user_id': '<uuid>'}, dump_only=True)
 
     @validates('password')
     def validate_password(self, value: str) -> None:
@@ -75,7 +75,7 @@ class UserInfoSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         model = User
 
     uuid = ma.UUID(dump_only=True)
-    url = ma.URLFor('api.get_user', values={'user_id': '<uuid>'}, dump_only=True)
+    url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
     username = ma.auto_field(dump_only=True)
 
 
@@ -84,7 +84,7 @@ class SocialMediaSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         model = SocialMedia
 
     uuid = ma.UUID(dump_only=True)
-    url = ma.URLFor('api.get_social', values={'social_id': '<uuid>'}, dump_only=True)
+    url = ma.URLFor('api.for_socials.get_one', values={'social_id': '<uuid>'}, dump_only=True)
     user = ma.Nested(UserInfoSchema(), dump_only=True)
     avatar = ma.auto_field(dump_only=True)
     first_name = ma.auto_field(validate=[validate.Regexp(
@@ -114,7 +114,7 @@ class PostSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:
         model = Post
     id = ma.auto_field(dump_only=True)
-    url = ma.URLFor('api.get_post', values={'post_id': '<id>'}, dump_only=True)
+    url = ma.URLFor('api.for_posts.get_one', values={'post_id': '<id>'}, dump_only=True)
     title = ma.auto_field()
     content = ma.auto_field()
     image = ma.auto_field(dump_only=True)
@@ -127,10 +127,10 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         model = Service
 
     id = ma.auto_field(dump_only=True)
-    url = ma.URLFor('api.get_service', values={'service_id': '<id>'}, dump_only=True)
+    url = ma.URLFor('api.for_services.get_one', values={'service_id': '<id>'}, dump_only=True)
     name = ma.auto_field(required=True)
     duration = ma.auto_field(reuired=True)
-    entries = ma.URLFor('api.get_service_entries', values={'service_id': '<id>'}, dump_only=True)
+    entries = ma.URLFor('api.for_entries.get_service_entries', values={'service_id': '<id>'}, dump_only=True)
 
 
 class TokenShema(ma.Schema):  # type: ignore[name-defined]
@@ -142,7 +142,7 @@ class EntrySchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         model = Entry
 
     uuid = ma.UUID(dump_only=True)
-    url = ma.URLFor('api.get_entry', values={'entry_id': '<uuid>'}, dump_only=True)
+    url = ma.URLFor('api.for_entries.get_one', values={'entry_id': '<uuid>'}, dump_only=True)
     user = ma.Nested(UserInfoSchema(), dump_only=True)
     services = ma.Nested(ServiceSchema(many=True), dump_only=True)
     created_on = ma.auto_field(dump_only=True)

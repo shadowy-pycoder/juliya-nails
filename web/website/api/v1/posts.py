@@ -16,16 +16,18 @@ posts_schema = PostSchema(many=True)
 
 
 @for_posts.route('/posts/')
+@authenticate(token_auth)
 @response(posts_schema)
-def get_posts() -> Sequence:
+def get_all() -> Sequence:
     posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc())).all()
     return posts  # type: ignore[return-value]
 
 
 @for_posts.route('/posts/<int:post_id>')
+@authenticate(token_auth)
 @response(post_schema)
 @other_responses({404: 'Post not found'})
-def get_post(post_id: int) -> Post:
+def get_one(post_id: int) -> Post:
     post = get_or_404(Post, post_id)
     return post
 
