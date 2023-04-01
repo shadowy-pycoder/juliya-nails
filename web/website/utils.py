@@ -5,13 +5,13 @@ import secrets
 from threading import Thread
 from typing import ParamSpec, TypeVar, Any
 
-from flask import current_app, flash, redirect, url_for, render_template, Flask, abort
+from flask import current_app, flash, redirect, url_for, render_template, Flask, abort, request
 from flask_mail import Message
 from flask_wtf.file import FileField
 from PIL import Image
 from werkzeug.wrappers.response import Response
 
-from . import mail
+from . import mail, token_auth
 from .models import current_user
 
 P = ParamSpec("P")
@@ -60,7 +60,11 @@ def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
 def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
     @wraps(func)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> R | Response:
-        if current_user.is_anonymous or not current_user.admin:
+        if request.mimetype == 'application/json':
+            user = token_auth.current_user()
+            if user and not user.admin:
+                abort(403)
+        elif not current_user.admin:
             return abort(404)
         return func(*args, **kwargs)
     return decorated_function

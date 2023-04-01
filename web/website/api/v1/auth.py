@@ -1,12 +1,11 @@
-from apifairy import authenticate, body, response
-from flask import Blueprint
+from apifairy import authenticate, response
 import sqlalchemy as sa
 
+from . import api
 from ... import db, basic_auth, token_auth
 from ...models import User
 from ...schemas import TokenShema
 
-for_auth = Blueprint('for_auth', __name__)
 
 token_schema = TokenShema()
 
@@ -22,7 +21,7 @@ def verify_password(username: str, password: str) -> User | None:
     return None
 
 
-@for_auth.route('/get-auth-token', methods=['POST'])
+@api.route('/get-auth-token', methods=['POST'])
 @authenticate(basic_auth)
 @response(token_schema)
 def get_auth_token() -> dict:

@@ -23,6 +23,7 @@ class Config:
     APIFAIRY_TITLE = 'JuliyaNails API'
     APIFAIRY_VERSION = '1.0'
     APIFAIRY_UI = 'elements'
+    APIFAIRY_UI_PATH = '/api/docs'
 
 
 class DevelopmentConfig(Config):

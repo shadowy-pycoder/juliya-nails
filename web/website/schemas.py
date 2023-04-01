@@ -1,5 +1,7 @@
 from datetime import datetime, date
+from decimal import Decimal
 import re
+from typing import Any
 
 from marshmallow import validate, validates, validates_schema, \
     ValidationError, post_dump, pre_load, post_load, pre_dump
@@ -42,6 +44,40 @@ class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
                 error_log.append(err_msg)
         if error_log:
             raise ValidationError(message + ', '.join(err for err in error_log))
+
+    @validates('username')
+    def validate_username(self, value: str) -> None:
+        pattern = re.compile(r"^[A-Za-z][A-Za-z0-9_.]*$")
+        if not value[0].isalpha():
+            raise ValidationError('Usernames must start with a letter')
+        if not pattern.match(value):
+            raise ValidationError('Usernames must have only letters, numbers, dots or underscores')
+        user = db.session.scalar(sa.select(User).filter(User.username.ilike(value)))
+        if user:
+            raise ValidationError('Please choose a different username')
+
+    @validates('email')
+    def validate_email(self, value: str) -> None:
+        user = db.session.scalar(sa.select(User).filter(User.email.ilike(value)))
+        if user:
+            raise ValidationError('Please choose a different email')
+
+
+class AdminUserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
+    class Meta:
+        model = User
+
+    uuid = ma.UUID(dump_only=True)
+    url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
+    username = ma.auto_field(required=True, validate=[validate.Length(min=2, max=20)])
+    email = ma.Email(required=True, validate=[validate.Length(max=100)])
+    password = ma.String(required=True, validate=validate.Length(min=8), load_only=True)
+    registered_on = ma.auto_field()
+    confirmed = ma.auto_field()
+    confirmed_on = ma.auto_field()
+    posts = ma.URLFor('api.for_posts.get_user_posts', values={'user_id': '<uuid>'}, dump_only=True)
+    entries = ma.URLFor('api.for_entries.get_user_entries', values={'user_id': '<uuid>'}, dump_only=True)
+    socials = ma.URLFor('api.for_socials.get_user_socials', values={'user_id': '<uuid>'}, dump_only=True)
 
     @validates('username')
     def validate_username(self, value: str) -> None:
@@ -129,8 +165,18 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     id = ma.auto_field(dump_only=True)
     url = ma.URLFor('api.for_services.get_one', values={'service_id': '<id>'}, dump_only=True)
     name = ma.auto_field(required=True)
-    duration = ma.auto_field(reuired=True)
+    duration = ma.auto_field(required=True)
     entries = ma.URLFor('api.for_entries.get_service_entries', values={'service_id': '<id>'}, dump_only=True)
+
+    @post_load
+    def fix_name(self, data: dict[str, str], **kwargs: dict[str, Any]) -> dict[str, str]:
+        data['name'] = data['name'].capitalize()
+        return data
+
+    @validates('duration')
+    def validate_duration(self, value: float) -> None:
+        if round(value, 2) <= 0:
+            raise ValidationError('Duration must be greater than or equal to 0.1')
 
 
 class TokenShema(ma.Schema):  # type: ignore[name-defined]
@@ -160,3 +206,7 @@ class CreateEntrySchema(EntrySchema):  # type: ignore[name-defined]
     def validate_date(self, value: datetime) -> None:
         if value < date.today():
             raise ValidationError('Date cannot be lower than current date')
+
+
+class EmptySchema(ma.Schema):  # type: ignore[name-defined]
+    pass

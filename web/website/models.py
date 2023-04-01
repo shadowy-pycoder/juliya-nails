@@ -1,4 +1,5 @@
 from datetime import datetime, date as date_, time as time_
+from decimal import Decimal
 from typing import Union, TypeVar, Type
 import uuid
 from uuid import UUID as UUID_
@@ -6,7 +7,7 @@ from uuid import UUID as UUID_
 from flask import abort, current_app, url_for
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.form import SecureForm, BaseForm
-from flask_login import UserMixin, current_user
+from flask_login import UserMixin, current_user, AnonymousUserMixin
 from flask_wtf.file import FileAllowed, FileField
 from itsdangerous import URLSafeTimedSerializer
 import sqlalchemy as sa
@@ -37,6 +38,13 @@ class UpdateMixin:
     def update(self, data: dict) -> None:
         for attr, value in data.items():
             setattr(self, attr, value)
+
+
+class AnonymousUser(AnonymousUserMixin):
+
+    @property
+    def admin(self) -> bool:
+        return False
 
 
 class User(UserMixin, UpdateMixin, db.Model):  # type: ignore[name-defined]
@@ -210,7 +218,7 @@ class Service(UpdateMixin, db.Model):  # type: ignore[name-defined]
 
     id: so.Mapped[int] = so.mapped_column(primary_key=True)
     name: so.Mapped[str] = so.mapped_column(sa.String(64), unique=True, nullable=False)
-    duration: so.Mapped[float] = so.mapped_column(nullable=False)
+    duration: so.Mapped[Decimal] = so.mapped_column(sa.Numeric(scale=1), nullable=False)
     entries: so.WriteOnlyMapped['Entry'] = so.relationship(
         secondary=association_table, back_populates='services', passive_deletes=True)
 
@@ -229,7 +237,7 @@ class AdminView(ModelView):
         self.static_folder = 'static'
 
     def is_accessible(self) -> bool:
-        if not current_user.is_anonymous and current_user.admin:
+        if current_user.admin:
             return current_user.is_authenticated
         return abort(404)
 

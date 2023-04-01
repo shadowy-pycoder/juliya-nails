@@ -40,17 +40,15 @@ def create_app(config_name: str) -> Flask:
     apifairy.init_app(app)
     ma.init_app(app)
 
-    from .api.v1 import api as api_v1
-    from .api.v1.auth import for_auth
+    from .api.v1 import api as api_v1, auth as api_auth, errors
     from .api.v1.entries import for_entries
-    from .api.v1.errors import for_errors
     from .api.v1.posts import for_posts
     from .api.v1.services import for_services
     from .api.v1.socials import for_socials
     from .api.v1.users import for_users
     from .auth.routes import auth
     from .main.routes import main, page_not_found
-    from .models import add_admin_views, User, UUID_
+    from .models import add_admin_views, User, UUID_, AnonymousUser
     from .users.routes import users
 
     @app.before_request
@@ -65,10 +63,9 @@ def create_app(config_name: str) -> Flask:
     def load_user(user_id: UUID_) -> User | None:
         return db.session.get(User, user_id)
 
+    login_manager.anonymous_user = AnonymousUser
     add_admin_views(db.session)
-    api_v1.register_blueprint(for_auth)
     api_v1.register_blueprint(for_entries)
-    api_v1.register_blueprint(for_errors)
     api_v1.register_blueprint(for_posts)
     api_v1.register_blueprint(for_services)
     api_v1.register_blueprint(for_socials)
