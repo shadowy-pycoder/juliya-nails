@@ -47,7 +47,7 @@ def create_app(config_name: str) -> Flask:
     from .api.v1.socials import for_socials
     from .api.v1.users import for_users
     from .auth.routes import auth
-    from .main.routes import main, page_not_found
+    from .main.routes import main, handle_error
     from .models import add_admin_views, User, UUID_, AnonymousUser
     from .users.routes import users
 
@@ -74,5 +74,6 @@ def create_app(config_name: str) -> Flask:
     app.register_blueprint(auth, url_prefix='/auth')
     app.register_blueprint(main, url_prefix='/')
     app.register_blueprint(users, url_prefix='/users')
-    app.register_error_handler(404, page_not_found)
+    app.register_error_handler(404, handle_error)
+    app.register_error_handler(405, handle_error)
     return app

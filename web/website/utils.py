@@ -60,13 +60,11 @@ def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
 def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
     @wraps(func)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> R | Response:
-        if request.mimetype == 'application/json':
-            user = token_auth.current_user()
-            if user and not user.admin:
-                abort(403)
-        elif not current_user.admin:
-            return abort(404)
-        return func(*args, **kwargs)
+        user = token_auth.current_user()
+        if user and user.admin or current_user.admin:
+            return func(*args, **kwargs)
+        else:
+            abort(403, 'You are not allowed to perform this operation')
     return decorated_function
 
 

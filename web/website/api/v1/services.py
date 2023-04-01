@@ -15,6 +15,22 @@ service_schema = ServiceSchema()
 services_schema = ServiceSchema(many=True)
 
 
+@for_services.route('/services/', methods=['POST'])
+@authenticate(token_auth)
+@admin_required
+@body(service_schema)
+@response(service_schema, 201)
+@other_responses({
+    403: 'You are not allowed to perform this operation'
+})
+def create_one(kwargs: dict[str, str | float]) -> Service:
+    """Create service"""
+    service = Service(**kwargs)
+    db.session.add(service)
+    db.session.commit()
+    return service
+
+
 @for_services.route('/services/', methods=['GET'])
 @authenticate(token_auth)
 @response(services_schema)
@@ -31,22 +47,6 @@ def get_all() -> Sequence:
 def get_one(service_id: int) -> Service:
     """Retrieve service by id"""
     service = get_or_404(Service, service_id)
-    return service
-
-
-@for_services.route('/services/', methods=['POST'])
-@authenticate(token_auth)
-@admin_required
-@body(service_schema)
-@response(service_schema, 201)
-@other_responses({
-    403: 'You are not allowed to perform this operation'
-})
-def create_one(kwargs: dict[str, str | float]) -> Service:
-    """Create service"""
-    service = Service(**kwargs)
-    db.session.add(service)
-    db.session.commit()
     return service
 
 

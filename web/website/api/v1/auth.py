@@ -3,7 +3,7 @@ import sqlalchemy as sa
 
 from . import api
 from ... import db, basic_auth, token_auth
-from ...models import User
+from ...models import User, current_user
 from ...schemas import TokenShema
 
 
@@ -32,4 +32,9 @@ def get_auth_token() -> dict:
 
 @token_auth.verify_token
 def verify_token(token: str | bytes) -> User | None:
-    return User.verify_token(token, context='auth', salt_context='auth-token')
+    user = None
+    if token:
+        user = User.verify_token(token, context='auth', salt_context='auth-token')
+    elif current_user.is_authenticated:
+        user = current_user
+    return user

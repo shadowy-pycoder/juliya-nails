@@ -1,5 +1,4 @@
 from datetime import datetime, date
-from decimal import Decimal
 import re
 from typing import Any
 
@@ -200,7 +199,7 @@ class CreateEntrySchema(EntrySchema):  # type: ignore[name-defined]
     class Meta:
         model = Entry
 
-    services = ma.List(ma.Integer())
+    services = ma.List(ma.Integer(), required=True)
 
     @validates('date')
     def validate_date(self, value: datetime) -> None:

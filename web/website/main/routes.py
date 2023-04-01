@@ -1,4 +1,4 @@
-from typing import Type
+from typing import Optional
 
 from flask import render_template, Blueprint, flash, redirect, url_for, abort, request, jsonify
 import sqlalchemy as sa
@@ -25,17 +25,17 @@ def about() -> str:
     return render_template('about.html', title='About')
 
 
-def page_not_found(error: HTTPException) -> Response | tuple[str, int]:
+def handle_error(error: HTTPException) -> Response | tuple[str, Optional[int]]:
     if request.mimetype == 'application/json':
         response = jsonify({
             'code': error.code,
             'message': error.name,
             'description': error.description,
         })
-        response.status_code = 404
+        response.status_code = error.code  # type: ignore[assignment]
         response.content_type = 'application/json'
         return response
-    return render_template('404.html', title='Page Not Found'), 404
+    return render_template(f'{error.code}.html', title='Page Not Found'), error.code
 
 
 @main.route("/create-post", methods=['GET', 'POST'])

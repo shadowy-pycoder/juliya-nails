@@ -9,7 +9,7 @@ from sqlalchemy.sql.schema import Sequence
 from ... import db, token_auth
 from ...models import User, SocialMedia, get_or_404
 from ...schemas import UserSchema, UpdateUserSchema, AdminUserSchema, EmptySchema
-from ...utils import admin_required
+from ...utils import admin_required, delete_image
 
 for_users = Blueprint('for_users', __name__)
 
@@ -70,7 +70,7 @@ def get_username(username: str) -> User:
 @authenticate(token_auth)
 @admin_required
 @body(admin_user_schema)
-@response(admin_user_schema)
+@response(admin_user_schema, 201)
 @other_responses({
     404: 'User not found',
     403: 'You are not allowed to perform this operation'
@@ -95,6 +95,7 @@ def delete_one(user_id: UUID) -> tuple[str, int]:
     user = get_or_404(User, user_id)
     if user.admin:
         abort(403, 'Attempt to delete admin user')
+    delete_image(user.socials.avatar, path='profiles')
     db.session.delete(user)
     db.session.commit()
     return '', 204
