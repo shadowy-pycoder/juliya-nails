@@ -1,20 +1,22 @@
+from typing import Any
 from uuid import UUID
 
-from apifairy import authenticate, body, response, other_responses
+from apifairy import authenticate, arguments, body, response, other_responses
 from flask import abort, Blueprint
 import sqlalchemy as sa
 from sqlalchemy.sql import func
 from sqlalchemy.sql.schema import Sequence
 
+from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import User, SocialMedia, get_or_404
-from ...schemas import UserSchema, UpdateUserSchema, AdminUserSchema, EmptySchema
+from ...schemas import (UserSchema, UpdateUserSchema, AdminUserSchema,
+                        UserFieldSchema, UserSortSchema, UserFilterSchema)
 from ...utils import admin_required, delete_image
 
 for_users = Blueprint('for_users', __name__)
 
 user_schema = UserSchema()
-users_schema = UserSchema(many=True)
 update_user_schema = UpdateUserSchema(partial=True)
 admin_user_schema = AdminUserSchema(partial=True)
 
@@ -39,11 +41,21 @@ def create_one(kwargs: dict[str, str]) -> User:
 
 @for_users.route('/users/', methods=['GET'])
 @authenticate(token_auth)
-@response(users_schema)
-def get_all() -> Sequence:
+@arguments(UserFieldSchema(only=['fields']))
+@arguments(UserFilterSchema())
+@arguments(UserSortSchema(only=['sort']))
+@other_responses({200: 'OK'})
+def get_all(fields: dict[str, list[str]],
+            filter: dict[str, Any],
+            sort: dict[str, list[str]]) -> Sequence:
     """Get all users"""
-    users = db.session.scalars(sa.select(User)).all()
-    return users  # type: ignore[return-value]
+    mapping = {'fields': UserFieldSchema, 'filter': UserFilterSchema, 'sort': UserSortSchema}
+    users, only = sanitize_query(fields=fields,
+                                 filter=filter,
+                                 sort=sort,
+                                 model=User,
+                                 mapping=mapping)  # type: ignore[arg-type]
+    return UserSchema(many=True, only=only).dump(users)
 
 
 @for_users.route('/users/<uuid:user_id>', methods=['GET'])

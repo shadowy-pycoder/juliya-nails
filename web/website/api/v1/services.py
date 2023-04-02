@@ -1,18 +1,17 @@
-from apifairy import authenticate, body, response, other_responses
+from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint
-from flask.wrappers import Response
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
+from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Service, get_or_404
-from ...schemas import ServiceSchema
+from ...schemas import ServiceSchema, ServiceFieldSchema, ServiceSortSchema
 from ...utils import admin_required
 
 for_services = Blueprint('for_services', __name__)
 
 service_schema = ServiceSchema()
-services_schema = ServiceSchema(many=True)
 
 
 @for_services.route('/services/', methods=['POST'])
@@ -33,11 +32,19 @@ def create_one(kwargs: dict[str, str | float]) -> Service:
 
 @for_services.route('/services/', methods=['GET'])
 @authenticate(token_auth)
-@response(services_schema)
-def get_all() -> Sequence:
+@arguments(ServiceFieldSchema(only=['fields']))
+@arguments(ServiceSortSchema(only=['sort']))
+@other_responses({200: 'OK'})
+def get_all(fields: dict[str, list[str]],
+            sort: dict[str, list[str]]) -> Sequence:
     """Get all services"""
-    services = db.session.scalars(sa.select(Service)).all()
-    return services  # type: ignore[return-value]
+    mapping = {'fields': ServiceFieldSchema, 'sort': ServiceSortSchema}
+    services, only = sanitize_query(fields=fields,
+                                    filter=None,
+                                    sort=sort,
+                                    model=Service,
+                                    mapping=mapping)  # type: ignore[arg-type]
+    return ServiceSchema(many=True, only=only).dump(services)
 
 
 @for_services.route('/services/<int:service_id>', methods=['GET'])

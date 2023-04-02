@@ -1,29 +1,40 @@
+from typing import Any
 from uuid import UUID
 
-from apifairy import authenticate, body, response, other_responses
+from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint
-import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
+from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import SocialMedia, User, get_or_404
-from ...schemas import SocialMediaSchema
+from ...schemas import SocialMediaSchema, SocialsFieldSchema, SocialsFilterSchema, SocialsSortSchema
 from ...utils import admin_required
 
 for_socials = Blueprint('for_socials', __name__)
 
 social_schema = SocialMediaSchema()
-socials_schema = SocialMediaSchema(many=True)
 
 
 @for_socials.route('/socials/', methods=['GET'])
 @authenticate(token_auth)
 @admin_required
-@response(socials_schema)
-def get_all() -> Sequence:
+@arguments(SocialsFieldSchema(only=['fields']))
+@arguments(SocialsFilterSchema())
+@arguments(SocialsSortSchema(only=['sort']))
+@other_responses({200: 'OK'})
+def get_all(
+        fields: dict[str, list[str]],
+        filter: dict[str, Any],
+        sort: dict[str, list[str]]) -> Sequence:
     """Retrieve all socials"""
-    socials = db.session.scalars(sa.select(SocialMedia)).all()
-    return socials  # type: ignore[return-value]
+    mapping = {'fields': SocialsFieldSchema, 'filter': SocialsFilterSchema, 'sort': SocialsSortSchema}
+    socials, only = sanitize_query(fields=fields,
+                                   filter=filter,
+                                   sort=sort,
+                                   model=SocialMedia,
+                                   mapping=mapping)  # type: ignore[arg-type]
+    return SocialMediaSchema(many=True, only=only).dump(socials)
 
 
 @for_socials.route('/socials/<uuid:social_id>', methods=['GET'])

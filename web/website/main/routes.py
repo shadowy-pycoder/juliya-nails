@@ -1,5 +1,3 @@
-from typing import Optional
-
 from flask import render_template, Blueprint, flash, redirect, url_for, abort, request, jsonify
 import sqlalchemy as sa
 from werkzeug.exceptions import HTTPException
@@ -25,7 +23,7 @@ def about() -> str:
     return render_template('about.html', title='About')
 
 
-def handle_error(error: HTTPException) -> Response | tuple[str, Optional[int]]:
+def handle_error(error: HTTPException) -> Response | tuple[str, int]:
     if request.mimetype == 'application/json':
         response = jsonify({
             'code': error.code,
@@ -35,7 +33,7 @@ def handle_error(error: HTTPException) -> Response | tuple[str, Optional[int]]:
         response.status_code = error.code  # type: ignore[assignment]
         response.content_type = 'application/json'
         return response
-    return render_template(f'{error.code}.html', title='Page Not Found'), error.code
+    return render_template(f'{error.code}.html', title='Page Not Found'), error.code  # type: ignore[return-value]
 
 
 @main.route("/create-post", methods=['GET', 'POST'])

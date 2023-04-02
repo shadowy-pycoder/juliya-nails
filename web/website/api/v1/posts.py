@@ -1,13 +1,13 @@
 from uuid import UUID
 
-from apifairy import authenticate, body, response, other_responses
+from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint
-import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
+from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
-from ...schemas import PostSchema
+from ...schemas import PostSchema, PostFieldSchema, PostSortSchema
 from ...utils import admin_required, delete_image
 
 for_posts = Blueprint('for_posts', __name__)
@@ -35,11 +35,19 @@ def create_one(kwargs: dict[str, str]) -> Post:
 
 @for_posts.route('/posts/', methods=['GET'])
 @authenticate(token_auth)
-@response(posts_schema)
-def get_all() -> Sequence:
+@arguments(PostFieldSchema(only=['fields']))
+@arguments(PostSortSchema(only=['sort']))
+@other_responses({200: 'OK'})
+def get_all(fields: dict[str, list[str]],
+            sort: dict[str, list[str]]) -> Sequence:
     """Get all posts"""
-    posts = db.session.scalars(sa.select(Post).order_by(Post.posted_on.desc())).all()
-    return posts  # type: ignore[return-value]
+    mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
+    posts, only = sanitize_query(fields=fields,
+                                 filter=None,
+                                 sort=sort,
+                                 model=Post,
+                                 mapping=mapping)  # type: ignore[arg-type]
+    return PostSchema(many=True, only=only).dump(posts)
 
 
 @for_posts.route('/posts/<int:post_id>', methods=['GET'])

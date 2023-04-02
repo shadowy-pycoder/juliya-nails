@@ -1,13 +1,13 @@
 from uuid import UUID
 
-from apifairy import authenticate, body, response, other_responses
+from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint, abort
-import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 
+from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
-from ...schemas import EntrySchema, CreateEntrySchema
+from ...schemas import EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema
 from ...utils import admin_required
 
 for_entries = Blueprint('for_entries', __name__)
@@ -41,11 +41,19 @@ def create_one(kwargs: dict) -> Entry:
 @for_entries.route('/entries/', methods=['GET'])
 @authenticate(token_auth)
 @admin_required
-@response(entries_schema)
-def get_all() -> Sequence:
+@arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntrySortSchema(only=['sort']))
+@other_responses({200: 'OK'})
+def get_all(fields: dict[str, list[str]],
+            sort: dict[str, list[str]]) -> Sequence:
     """Get all entries"""
-    entries = db.session.scalars(sa.select(Entry).order_by(Entry.date.desc(), Entry.time.desc())).all()
-    return entries  # type: ignore[return-value]
+    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    entries, only = sanitize_query(fields=fields,
+                                   filter=None,
+                                   sort=sort,
+                                   model=Entry,
+                                   mapping=mapping)  # type: ignore[arg-type]
+    return EntrySchema(many=True, only=only).dump(entries)
 
 
 @for_entries.route('/entries/<uuid:entry_id>', methods=['GET'])

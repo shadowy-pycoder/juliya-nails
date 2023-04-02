@@ -3,8 +3,9 @@ import re
 from typing import Any
 
 from marshmallow import validate, validates, validates_schema, \
-    ValidationError, post_dump, pre_load, post_load, pre_dump
+    ValidationError, post_dump, pre_load, post_load, pre_dump, RAISE
 import sqlalchemy as sa
+from webargs import fields
 
 
 from . import ma, db, token_auth
@@ -169,7 +170,8 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
 
     @post_load
     def fix_name(self, data: dict[str, str], **kwargs: dict[str, Any]) -> dict[str, str]:
-        data['name'] = data['name'].capitalize()
+        if 'name' in data:
+            data['name'] = data['name'].capitalize()
         return data
 
     @validates('duration')
@@ -209,3 +211,166 @@ class CreateEntrySchema(EntrySchema):  # type: ignore[name-defined]
 
 class EmptySchema(ma.Schema):  # type: ignore[name-defined]
     pass
+
+
+class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]
+    uuid = ma.String()
+    url = ma.String()
+    username = ma.String()
+    registered_on = ma.String()
+    confirmed = ma.String()
+    confirmed_on = ma.String()
+    posts = ma.String()
+    entries = ma.String()
+    socials = ma.String()
+    fields = fields.DelimitedList(ma.String(),
+                                  description=("""
+                                                Possible values:
+                                                "uuid",
+                                                "url",
+                                                "username",
+                                                "registered_on",
+                                                "confirmed",
+                                                "confirmed_on",
+                                                "posts",
+                                                "entries",
+                                                "socials"
+                                                """))
+
+
+class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    confirmed = ma.Boolean(validate=validate.OneOf([True, False]),
+                           description=("""
+                                        Possible values:
+                                        "true",
+                                        "false",
+                                        """))
+    confirmed_on = ma.DateTime(description=("""
+                                            Format:
+                                            "2023-03-27 15:00"
+                                            """))
+
+
+class UserSortSchema(ma.Schema):  # type: ignore[name-defined]
+    username = ma.String()
+    registered_on = ma.DateTime()
+    confirmed_on = ma.DateTime()
+    sort = fields.DelimitedList(ma.String(), description=("""
+                                                    Possible values:
+                                                    "username",
+                                                    "registered_on",
+                                                    "confirmed_on",
+                                                    """))
+
+
+class SocialsFieldSchema(SocialMediaSchema):  # type: ignore[name-defined]
+    fields = fields.DelimitedList(ma.String(),
+                                  description=("""
+                                                    Possible values:
+                                                    "uuid",
+                                                    "url",
+                                                    "user",
+                                                    "avatar",
+                                                    "first_name",
+                                                    "last_name",
+                                                    "phone_number",
+                                                    "viber",
+                                                    "whatsapp",
+                                                    "instagram",
+                                                    "telegram",
+                                                    "youtube",
+                                                    "website",
+                                                    "vk",
+                                                    "about"
+                                                    """))
+
+
+class SocialsFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    first_name = ma.String(description=("""
+                                        Filter by specified first name
+                                        """))
+    last_name = ma.String(description=("""
+                                        Filter by specified last name
+                                        """))
+
+
+class SocialsSortSchema(ma.Schema):  # type: ignore[name-defined]
+    first_name = ma.String()
+    last_name = ma.String()
+    sort = fields.DelimitedList(ma.String(),
+                                description=("""
+                                                Possible values:
+                                                "first_name",
+                                                "last_name",
+                                                """))
+
+
+class ServiceFieldSchema(ServiceSchema):  # type: ignore[name-defined]
+    fields = fields.DelimitedList(ma.String(),
+                                  description=("""
+                                                Possible values:
+                                                "id",
+                                                "url",
+                                                "name",
+                                                "duration",
+                                                "entries",
+                                                """))
+
+
+class ServiceSortSchema(ma.Schema):  # type: ignore[name-defined]
+    duration = ma.String()
+    sort = fields.DelimitedList(ma.String(),
+                                description=("""
+                                                Possible values:
+                                                "duration"
+                                                """))
+
+
+class PostFieldSchema(PostSchema):  # type: ignore[name-defined]
+    fields = fields.DelimitedList(ma.String(),
+                                  description=("""
+                                                Possible values:
+                                                "id",
+                                                "url",
+                                                "title",
+                                                "content",
+                                                "image",
+                                                "posted_on",
+                                                "author,
+                                                """))
+
+
+class PostSortSchema(ma.Schema):  # type: ignore[name-defined]
+    posted_on = ma.String()
+    sort = fields.DelimitedList(ma.String(),
+                                description=("""
+                                                Possible values:
+                                                "posted_on"
+                                                """))
+
+
+class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
+    fields = fields.DelimitedList(ma.String(),
+                                  description=("""
+                                                Possible values:
+                                                "uuid",
+                                                "url",
+                                                "user",
+                                                "services",
+                                                "created_on",
+                                                "date",
+                                                "time,
+                                                """))
+
+
+class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]
+    created_on = ma.String()
+    date = ma.String()
+    time = ma.String()
+    sort = fields.DelimitedList(ma.String(),
+                                description=("""
+                                                Possible values:
+                                                "created_on",
+                                                "date",
+                                                "time"
+                                                """))
