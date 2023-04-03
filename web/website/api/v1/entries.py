@@ -1,8 +1,8 @@
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses, arguments
-from flask import Blueprint, abort
-from sqlalchemy.sql.schema import Sequence
+from flask import Blueprint, abort, jsonify, url_for
+from flask.wrappers import Response
 
 from ..common import sanitize_query
 from ... import db, token_auth
@@ -18,11 +18,11 @@ create_entry_schema = CreateEntrySchema()
 update_entry_schema = CreateEntrySchema(partial=True)
 
 
-@for_entries.route('/entries/', methods=['POST'])
+@for_entries.route('/entries', methods=['POST'])
 @authenticate(token_auth)
 @body(create_entry_schema)
-@response(entry_schema, 201)
-def create_one(kwargs: dict) -> Entry:
+@other_responses({201: entry_schema})
+def create_one(kwargs: dict) -> Response:
     """Create new entry"""
     user: User = token_auth.current_user()
     services = {
@@ -35,22 +35,29 @@ def create_one(kwargs: dict) -> Entry:
     entry.time = kwargs['time']
     db.session.add(entry)
     db.session.commit()
-    return entry
+    response = jsonify(entry_schema.dump(entry))
+    response.status_code = 201
+    response.headers['Location'] = url_for('api.for_entries.get_one', entry_id=entry.uuid, _external=True)
+    return response
 
 
-@for_entries.route('/entries/', methods=['GET'])
+@for_entries.route('/entries', methods=['GET'])
 @authenticate(token_auth)
 @admin_required
 @arguments(EntryFieldSchema(only=['fields']))
 @arguments(EntrySortSchema(only=['sort']))
-@other_responses({200: 'OK'})
+@other_responses({
+    200: entries_schema,
+    403: 'You are not allowed to perform this operation'
+})
 def get_all(fields: dict[str, list[str]],
-            sort: dict[str, list[str]]) -> Sequence:
+            sort: dict[str, list[str]]) -> Response:
     """Get all entries"""
     mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
     entries, only = sanitize_query(fields=fields,
                                    filter=None,
                                    sort=sort,
+                                   obj=Entry,
                                    model=Entry,
                                    mapping=mapping)  # type: ignore[arg-type]
     return EntrySchema(many=True, only=only).dump(entries)
@@ -63,7 +70,7 @@ def get_all(fields: dict[str, list[str]],
     404: 'Entry not found',
     403: 'You are not allowed to perform this operation'
 })
-def get_one(entry_id: UUID) -> Entry:
+def get_one(entry_id: UUID) -> Response:
     """Retrieve entry by uuid"""
     user: User = token_auth.current_user()
     entry = get_or_404(Entry, entry_id)
@@ -80,7 +87,7 @@ def get_one(entry_id: UUID) -> Entry:
     404: 'Entry not found',
     403: 'You are not allowed to perform this operation'
 })
-def update_one(kwargs: dict, entry_id: UUID) -> Entry:
+def update_one(kwargs: dict, entry_id: UUID) -> Response:
     """Update entry"""
     user: User = token_auth.current_user()
     entry = get_or_404(Entry, entry_id)
@@ -122,38 +129,67 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
 @for_entries.route('/users/<uuid:user_id>/entries', methods=['GET'])
 @authenticate(token_auth)
 @admin_required
-@response(entries_schema)
+@arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntrySortSchema(only=['sort']))
 @other_responses({
+    200: entries_schema,
     404: 'User not found',
     403: 'You are not allowed to perform this operation'
 })
-def get_user_entries(user_id: UUID) -> Sequence:
+def get_user_entries(fields: dict[str, list[str]],
+                     sort: dict[str, list[str]],
+                     user_id: UUID) -> Response:
     """Retrieve user's entries"""
     user = get_or_404(User, user_id)
-    entries = db.session.scalars(user.entries.select().order_by(Entry.date.desc(), Entry.time.desc())).all()
-    return entries  # type: ignore[return-value]
+    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    entries, only = sanitize_query(fields=fields,
+                                   filter=None,
+                                   sort=sort,
+                                   obj=user.entries,
+                                   model=Entry,
+                                   mapping=mapping)  # type: ignore[arg-type]
+    return EntrySchema(many=True, only=only).dump(entries)
 
 
 @for_entries.route('/services/<int:service_id>/entries', methods=['GET'])
 @authenticate(token_auth)
 @admin_required
-@response(entries_schema)
+@arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntrySortSchema(only=['sort']))
 @other_responses({
+    200: entries_schema,
     404: 'Service not found',
     403: 'You are not allowed to perform this operation'
 })
-def get_service_entries(service_id: int) -> Sequence:
+def get_service_entries(fields: dict[str, list[str]],
+                        sort: dict[str, list[str]],
+                        service_id: int) -> Response:
     """Retrieve service's entries"""
     service = get_or_404(Service, service_id)
-    entries = db.session.scalars(service.entries.select().order_by(Entry.date.desc(), Entry.time.desc())).all()
-    return entries  # type: ignore[return-value]
+    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    entries, only = sanitize_query(fields=fields,
+                                   filter=None,
+                                   sort=sort,
+                                   obj=service.entries,
+                                   model=Entry,
+                                   mapping=mapping)  # type: ignore[arg-type]
+    return EntrySchema(many=True, only=only).dump(entries)
 
 
 @for_entries.route('/me/entries', methods=['GET'])
 @authenticate(token_auth)
-@response(entries_schema)
-def my_entries() -> Sequence:
+@arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntrySortSchema(only=['sort']))
+@other_responses({200: entries_schema})
+def my_entries(fields: dict[str, list[str]],
+               sort: dict[str, list[str]]) -> Response:
     """Retrieve my entries"""
     user: User = token_auth.current_user()
-    entries = db.session.scalars(user.entries.select().order_by(Entry.date.desc(), Entry.time.desc())).all()
-    return entries  # type: ignore[return-value]
+    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    entries, only = sanitize_query(fields=fields,
+                                   filter=None,
+                                   sort=sort,
+                                   obj=user.entries,
+                                   model=Entry,
+                                   mapping=mapping)  # type: ignore[arg-type]
+    return EntrySchema(many=True, only=only).dump(entries)

@@ -19,7 +19,7 @@ class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
 
     uuid = ma.UUID(dump_only=True)
     url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
-    username = ma.auto_field(required=True, validate=[validate.Length(min=2, max=20)], dump_only=True)
+    username = ma.auto_field(required=True, validate=[validate.Length(min=2, max=20)])
     email = ma.Email(required=True, validate=[validate.Length(max=100)], load_only=True)
     password = ma.String(required=True, validate=validate.Length(min=8), load_only=True)
     registered_on = ma.auto_field(dump_only=True)
@@ -98,6 +98,7 @@ class AdminUserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
 
 
 class UpdateUserSchema(UserSchema):
+    username = ma.auto_field(load_only=True)
     old_password = ma.String(load_only=True, validate=validate.Length(min=3))
 
     @validates('old_password')
@@ -180,7 +181,7 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
             raise ValidationError('Duration must be greater than or equal to 0.1')
 
 
-class TokenShema(ma.Schema):  # type: ignore[name-defined]
+class TokenSchema(ma.Schema):  # type: ignore[name-defined]
     token = ma.String()
 
 

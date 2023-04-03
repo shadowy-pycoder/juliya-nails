@@ -2,10 +2,10 @@ from typing import Any
 from uuid import UUID
 
 from apifairy import authenticate, arguments, body, response, other_responses
-from flask import abort, Blueprint
+from flask import abort, Blueprint, jsonify, url_for
+from flask.wrappers import Response
 import sqlalchemy as sa
 from sqlalchemy.sql import func
-from sqlalchemy.sql.schema import Sequence
 
 from ..common import sanitize_query
 from ... import db, token_auth
@@ -17,14 +17,15 @@ from ...utils import admin_required, delete_image
 for_users = Blueprint('for_users', __name__)
 
 user_schema = UserSchema()
+users_schema = UserSchema(many=True)
 update_user_schema = UpdateUserSchema(partial=True)
 admin_user_schema = AdminUserSchema(partial=True)
 
 
-@for_users.route('/users/', methods=['POST'])
+@for_users.route('/users', methods=['POST'])
 @body(user_schema)
-@response(user_schema, 201)
-def create_one(kwargs: dict[str, str]) -> User:
+@other_responses({201: user_schema})
+def create_one(kwargs: dict[str, str]) -> Response:
     """Create a new user"""
     user = User(**kwargs)
     user.confirmed = True
@@ -36,23 +37,27 @@ def create_one(kwargs: dict[str, str]) -> User:
         socials = SocialMedia(user_id=registered_user.uuid)
         db.session.add(socials)
         db.session.commit()
-    return user
+    response = jsonify(user_schema.dump(user))
+    response.status_code = 201
+    response.headers['Location'] = url_for('api.for_users.get_one', user_id=user.uuid, _external=True)
+    return response
 
 
-@for_users.route('/users/', methods=['GET'])
+@for_users.route('/users', methods=['GET'])
 @authenticate(token_auth)
 @arguments(UserFieldSchema(only=['fields']))
 @arguments(UserFilterSchema())
 @arguments(UserSortSchema(only=['sort']))
-@other_responses({200: 'OK'})
+@other_responses({200: users_schema})
 def get_all(fields: dict[str, list[str]],
             filter: dict[str, Any],
-            sort: dict[str, list[str]]) -> Sequence:
+            sort: dict[str, list[str]]) -> Response:
     """Get all users"""
     mapping = {'fields': UserFieldSchema, 'filter': UserFilterSchema, 'sort': UserSortSchema}
     users, only = sanitize_query(fields=fields,
                                  filter=filter,
                                  sort=sort,
+                                 obj=User,
                                  model=User,
                                  mapping=mapping)  # type: ignore[arg-type]
     return UserSchema(many=True, only=only).dump(users)
@@ -62,7 +67,7 @@ def get_all(fields: dict[str, list[str]],
 @authenticate(token_auth)
 @response(user_schema)
 @other_responses({404: 'User not found'})
-def get_one(user_id: UUID) -> User:
+def get_one(user_id: UUID) -> Response:
     """Retrieve user by uuid"""
     user = get_or_404(User, user_id)
     return user
@@ -72,7 +77,7 @@ def get_one(user_id: UUID) -> User:
 @authenticate(token_auth)
 @response(user_schema)
 @other_responses({404: 'User not found'})
-def get_username(username: str) -> User:
+def get_username(username: str) -> Response:
     """Retrieve user by username"""
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
     return user
@@ -82,12 +87,12 @@ def get_username(username: str) -> User:
 @authenticate(token_auth)
 @admin_required
 @body(admin_user_schema)
-@response(admin_user_schema, 201)
+@response(admin_user_schema)
 @other_responses({
     404: 'User not found',
     403: 'You are not allowed to perform this operation'
 })
-def update_one(kwargs: dict, user_id: UUID) -> User:
+def update_one(kwargs: dict, user_id: UUID) -> Response:
     """Update user"""
     user = get_or_404(User, user_id)
     user.update(kwargs)
@@ -116,7 +121,7 @@ def delete_one(user_id: UUID) -> tuple[str, int]:
 @for_users.route('/me', methods=['GET'])
 @authenticate(token_auth)
 @response(user_schema)
-def me() -> User:
+def me() -> Response:
     """Retrieve the authenticated user"""
     return token_auth.current_user()
 
@@ -126,7 +131,7 @@ def me() -> User:
 @body(update_user_schema)
 @response(user_schema)
 @other_responses({400: 'Something wrong with password or email'})
-def update_me(kwargs: dict[str, str]) -> User:
+def update_me(kwargs: dict[str, str]) -> Response:
     """Update the authenticated user"""
     user: User = token_auth.current_user()
     if 'password' in kwargs and 'old_password' not in kwargs:

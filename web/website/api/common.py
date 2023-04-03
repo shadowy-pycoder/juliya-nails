@@ -4,23 +4,38 @@ from marshmallow import Schema
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
 from sqlalchemy.orm.decl_api import DeclarativeMeta
+from sqlalchemy.orm import WriteOnlyCollection
 
 from .. import db, apifairy
 
 
 @apifairy.process_apispec
-def fields(spec: dict[str, dict]) -> dict[str, dict]:
-    paths = spec['paths']
+def fields(spec: dict[str, dict | Any]) -> dict[str, dict]:
+    paths = ['/api/v1/posts',
+             '/api/v1/users',
+             '/api/v1/entries',
+             '/api/v1/services',
+             '/api/v1/socials',
+             '/api/v1/me/posts',
+             '/api/v1/me/entries',
+             '/api/v1/users/{user_id}/posts',
+             '/api/v1/users/{user_id}/entries',
+             '/api/v1/services/{service_id}/entries']
     for path in paths:
-        if '{' not in path:
-            path = paths.get(path)
-            if 'get' in path:
-                parameters = path['get']['parameters']
-                if parameters:
-                    for parameter in parameters:
-                        if parameter['name'] in ['fields', 'sort']:
-                            parameter['explode'] = False
-
+        operation = spec['paths'].get(path, {})
+        if 'get' in operation:
+            parameters = operation['get']['parameters']
+            if parameters:
+                for parameter in parameters:
+                    if parameter['name'] in ['fields', 'sort']:
+                        parameter['explode'] = False
+            get_responses = operation['get']['responses']
+            if '204' in get_responses:
+                del get_responses['204']
+        if 'post' in operation:
+            post_responses = operation['post']['responses']
+            if '204' in post_responses:
+                del post_responses['204']
     return spec
 
 
@@ -50,16 +65,17 @@ def sanitize_fields(fields: dict[str, list[str]] | dict[str, Any],
 def sanitize_query(fields: dict[str, list[str]] | None,
                    filter: dict[str, Any] | None,
                    sort: dict[str, list[str]] | None,
+                   obj: Type[DeclarativeMeta] | WriteOnlyCollection,
                    model: Type[DeclarativeMeta],
                    mapping: dict[str, Type[Schema]]) -> tuple[Sequence, list | None]:
     only = None
     if fields:
         only = sanitize_fields(fields, mapping['fields'])
-    data = sa.select(model)
+    data = obj.select() if isinstance(obj, WriteOnlyCollection) else sa.select(obj)
     if filter:
         filters: dict = sanitize_fields(filter, mapping['filter'], param='filter')  # type: ignore[assignment]
         mapped_filters: dict = {getattr(model, param): value for param, value in filters.items()}
-        data = data.filter(sa.and_(*[criterion == value for criterion, value in mapped_filters.items()]))
+        data = data.filter(sa.and_(*[criterion.ilike(value) for criterion, value in mapped_filters.items()]))
     if sort:
         criteria = sanitize_fields(sort, mapping['sort'], param='sort')
         data = data.order_by(sa.text(', '.join(criterion for criterion in criteria)))

@@ -4,10 +4,10 @@ import sqlalchemy as sa
 from . import api
 from ... import db, basic_auth, token_auth
 from ...models import User, current_user
-from ...schemas import TokenShema
+from ...schemas import TokenSchema
 
 
-token_schema = TokenShema()
+token_schema = TokenSchema()
 
 
 @basic_auth.verify_password
