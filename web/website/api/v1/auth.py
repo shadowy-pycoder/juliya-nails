@@ -25,6 +25,7 @@ def verify_password(username: str, password: str) -> User | None:
 @authenticate(basic_auth)
 @response(token_schema)
 def get_auth_token() -> dict:
+    """Get auth token"""
     user: User = basic_auth.current_user()
     token = user.generate_token(context='auth', salt_context='auth-token')
     return dict(token=token)

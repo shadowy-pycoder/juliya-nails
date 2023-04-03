@@ -9,6 +9,7 @@ from wtforms.validators import DataRequired, Length, Email, EqualTo, ValidationE
 
 from .. import bcrypt, db
 from ..models import User, SocialMedia, current_user
+from ..utils import PATTERNS
 
 
 class HasValueProtocol(Protocol):
@@ -84,7 +85,7 @@ class RegistrationForm(CustomValidatorsMixin, FlaskForm):
         'Username', validators=[
             DataRequired(),
             Length(min=2, max=20),
-            Regexp('^[A-Za-z][A-Za-z0-9_.]*$',
+            Regexp(PATTERNS['username'],
                    message='Usernames must have only letters, numbers, dots or underscores'),
             IntegrityCheck(model=User)])
     email = StringField('Email',

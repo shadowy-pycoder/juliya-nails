@@ -2,10 +2,10 @@ from datetime import datetime, date
 import re
 from typing import Any
 
-from marshmallow import validate, validates, validates_schema, \
-    ValidationError, post_dump, pre_load, post_load, pre_dump, RAISE
+from marshmallow import validate, validates, ValidationError, post_load
 import sqlalchemy as sa
 from webargs import fields
+from werkzeug.exceptions import Forbidden, NotFound
 
 
 from . import ma, db, token_auth
@@ -16,6 +16,7 @@ from .utils import PATTERNS
 class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:
         model = User
+        description = 'This schema represents a user.'
 
     uuid = ma.UUID(dump_only=True)
     url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
@@ -226,6 +227,7 @@ class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]
     socials = ma.String()
     fields = fields.DelimitedList(ma.String(),
                                   description=("""
+                                                List of fields to include in response
                                                 Possible values:
                                                 "uuid",
                                                 "url",
@@ -375,3 +377,21 @@ class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]
                                                 "date",
                                                 "time"
                                                 """))
+
+
+class NotFoundSchema(ma.Schema):  # type: ignore[name-defined]
+    class Meta:
+        ordered = True
+    error = NotFound()
+    code = ma.Integer(load_default=error.code)
+    message = ma.String(load_default=error.name)
+    description = ma.String(load_default=error.description)
+
+
+class ForbiddenSchema(ma.Schema):  # type: ignore[name-defined]
+    class Meta:
+        ordered = True
+    error = Forbidden()
+    code = ma.Integer(load_default=error.code)
+    message = ma.String(load_default=error.name)
+    description = ma.String(load_default=error.description)

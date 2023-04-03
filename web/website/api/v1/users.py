@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Annotated
 from uuid import UUID
 
 from apifairy import authenticate, arguments, body, response, other_responses
@@ -10,8 +10,8 @@ from sqlalchemy.sql import func
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import User, SocialMedia, get_or_404
-from ...schemas import (UserSchema, UpdateUserSchema, AdminUserSchema,
-                        UserFieldSchema, UserSortSchema, UserFilterSchema)
+from ...schemas import (UserSchema, UpdateUserSchema, AdminUserSchema, UserFieldSchema,
+                        UserSortSchema, UserFilterSchema, NotFoundSchema, ForbiddenSchema)
 from ...utils import admin_required, delete_image
 
 for_users = Blueprint('for_users', __name__)
@@ -66,8 +66,8 @@ def get_all(fields: dict[str, list[str]],
 @for_users.route('/users/<uuid:user_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(user_schema)
-@other_responses({404: 'User not found'})
-def get_one(user_id: UUID) -> Response:
+@other_responses({404: (NotFoundSchema, 'User not found')})
+def get_one(user_id: Annotated[UUID, 'UUID of the user to retrieve']) -> Response:
     """Retrieve user by uuid"""
     user = get_or_404(User, user_id)
     return user
@@ -76,7 +76,7 @@ def get_one(user_id: UUID) -> Response:
 @for_users.route('/users/<username>', methods=['GET'])
 @authenticate(token_auth)
 @response(user_schema)
-@other_responses({404: 'User not found'})
+@other_responses({404: (NotFoundSchema, 'User not found')})
 def get_username(username: str) -> Response:
     """Retrieve user by username"""
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
@@ -89,8 +89,8 @@ def get_username(username: str) -> Response:
 @body(admin_user_schema)
 @response(admin_user_schema)
 @other_responses({
-    404: 'User not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'User not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_one(kwargs: dict, user_id: UUID) -> Response:
     """Update user"""
@@ -104,8 +104,8 @@ def update_one(kwargs: dict, user_id: UUID) -> Response:
 @authenticate(token_auth)
 @admin_required
 @other_responses({
-    404: 'User not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'User not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def delete_one(user_id: UUID) -> tuple[str, int]:
     """Delete user"""

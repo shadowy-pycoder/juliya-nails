@@ -7,7 +7,7 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
-from ...schemas import PostSchema, PostFieldSchema, PostSortSchema
+from ...schemas import PostSchema, PostFieldSchema, PostSortSchema, NotFoundSchema, ForbiddenSchema
 from ...utils import admin_required, delete_image
 
 for_posts = Blueprint('for_posts', __name__)
@@ -22,7 +22,7 @@ posts_schema = PostSchema(many=True)
 @body(post_schema)
 @other_responses({
     201: post_schema,
-    403: 'You are not allowed to perform this operation'
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def create_one(kwargs: dict[str, str]) -> Response:
     """Create post"""
@@ -57,7 +57,7 @@ def get_all(fields: dict[str, list[str]],
 @for_posts.route('/posts/<int:post_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(post_schema)
-@other_responses({404: 'Post not found'})
+@other_responses({404: (NotFoundSchema, 'Post not found')})
 def get_one(post_id: int) -> Response:
     """Retrieve post by id"""
     post = get_or_404(Post, post_id)
@@ -70,8 +70,8 @@ def get_one(post_id: int) -> Response:
 @body(post_schema)
 @response(post_schema)
 @other_responses({
-    404: 'Post not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Post not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_one(kwargs: dict, post_id: int) -> Response:
     """Update post"""
@@ -85,8 +85,8 @@ def update_one(kwargs: dict, post_id: int) -> Response:
 @authenticate(token_auth)
 @admin_required
 @other_responses({
-    404: 'Post not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Post not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def delete_one(post_id: int) -> tuple[str, int]:
     """Delete post"""
@@ -103,7 +103,7 @@ def delete_one(post_id: int) -> tuple[str, int]:
 @arguments(PostSortSchema(only=['sort']))
 @other_responses({
     200: posts_schema,
-    404: 'User not found'
+    404: (NotFoundSchema, 'User not found')
 })
 def get_user_posts(fields: dict[str, list[str]],
                    sort: dict[str, list[str]],

@@ -18,6 +18,7 @@ P = ParamSpec("P")
 R = TypeVar("R")
 
 PATTERNS = {
+    'username': r'^[A-Za-z][A-Za-z0-9_.]*$',
     'youtube': r'(https?:\/\/)?(?:www.)?youtu((\.be)|(be\..{2,5}))\/((user)|(channel))\/',
     'website': r'^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&\/=]*)$',
     'vk': r'^(https?:\/\/)?(?:www.)?(vk\.com|vkontakte\.ru)\/(id\d|[a-zA-Z0-9_.])+$',

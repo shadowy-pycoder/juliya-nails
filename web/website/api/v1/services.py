@@ -5,7 +5,7 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Service, get_or_404
-from ...schemas import ServiceSchema, ServiceFieldSchema, ServiceSortSchema
+from ...schemas import ServiceSchema, ServiceFieldSchema, ServiceSortSchema, NotFoundSchema, ForbiddenSchema
 from ...utils import admin_required
 
 for_services = Blueprint('for_services', __name__)
@@ -20,7 +20,7 @@ services_schema = ServiceSchema(many=True)
 @body(service_schema)
 @other_responses({
     201: service_schema,
-    403: 'You are not allowed to perform this operation'
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def create_one(kwargs: dict[str, str | float]) -> Response:
     """Create service"""
@@ -54,7 +54,7 @@ def get_all(fields: dict[str, list[str]],
 @for_services.route('/services/<int:service_id>', methods=['GET'])
 @authenticate(token_auth)
 @response(service_schema)
-@other_responses({404: 'Service not found'})
+@other_responses({404: (NotFoundSchema, 'Service not found')})
 def get_one(service_id: int) -> Response:
     """Retrieve service by id"""
     service = get_or_404(Service, service_id)
@@ -67,8 +67,8 @@ def get_one(service_id: int) -> Response:
 @body(service_schema)
 @response(service_schema)
 @other_responses({
-    404: 'Service not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Service not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_one(kwargs: dict, service_id: int) -> Response:
     """Update service"""
@@ -82,8 +82,8 @@ def update_one(kwargs: dict, service_id: int) -> Response:
 @authenticate(token_auth)
 @admin_required
 @other_responses({
-    404: 'Service not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Service not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def delete_one(service_id: int) -> tuple[str, int]:
     """Delete service"""

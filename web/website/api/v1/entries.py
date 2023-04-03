@@ -7,7 +7,8 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
-from ...schemas import EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema
+from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema,
+                        EntrySortSchema, NotFoundSchema, ForbiddenSchema)
 from ...utils import admin_required
 
 for_entries = Blueprint('for_entries', __name__)
@@ -48,7 +49,7 @@ def create_one(kwargs: dict) -> Response:
 @arguments(EntrySortSchema(only=['sort']))
 @other_responses({
     200: entries_schema,
-    403: 'You are not allowed to perform this operation'
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_all(fields: dict[str, list[str]],
             sort: dict[str, list[str]]) -> Response:
@@ -67,8 +68,8 @@ def get_all(fields: dict[str, list[str]],
 @authenticate(token_auth)
 @response(entry_schema)
 @other_responses({
-    404: 'Entry not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Entry not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_one(entry_id: UUID) -> Response:
     """Retrieve entry by uuid"""
@@ -84,8 +85,8 @@ def get_one(entry_id: UUID) -> Response:
 @body(update_entry_schema)
 @response(entry_schema)
 @other_responses({
-    404: 'Entry not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Entry not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_one(kwargs: dict, entry_id: UUID) -> Response:
     """Update entry"""
@@ -112,8 +113,8 @@ def update_one(kwargs: dict, entry_id: UUID) -> Response:
 @for_entries.route('/entries/<uuid:entry_id>', methods=['DELETE'])
 @authenticate(token_auth)
 @other_responses({
-    404: 'Entry not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Entry not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def delete_one(entry_id: UUID) -> tuple[str, int]:
     """Delete entry"""
@@ -133,8 +134,8 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
 @arguments(EntrySortSchema(only=['sort']))
 @other_responses({
     200: entries_schema,
-    404: 'User not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Entry not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_user_entries(fields: dict[str, list[str]],
                      sort: dict[str, list[str]],
@@ -158,8 +159,8 @@ def get_user_entries(fields: dict[str, list[str]],
 @arguments(EntrySortSchema(only=['sort']))
 @other_responses({
     200: entries_schema,
-    404: 'Service not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Entry not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_service_entries(fields: dict[str, list[str]],
                         sort: dict[str, list[str]],

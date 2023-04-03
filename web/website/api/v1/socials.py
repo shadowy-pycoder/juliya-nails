@@ -8,7 +8,8 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import SocialMedia, User, get_or_404
-from ...schemas import SocialMediaSchema, SocialsFieldSchema, SocialsFilterSchema, SocialsSortSchema
+from ...schemas import (SocialMediaSchema, SocialsFieldSchema, SocialsFilterSchema, SocialsSortSchema,
+                        NotFoundSchema, ForbiddenSchema)
 from ...utils import admin_required
 
 for_socials = Blueprint('for_socials', __name__)
@@ -25,7 +26,7 @@ socials_schema = SocialMediaSchema(many=True)
 @arguments(SocialsSortSchema(only=['sort']))
 @other_responses({
     200: socials_schema,
-    403: 'You are not allowed to perform this operation'
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_all(
         fields: dict[str, list[str]],
@@ -47,8 +48,8 @@ def get_all(
 @admin_required
 @response(social_schema)
 @other_responses({
-    404: 'Not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_one(social_id: UUID) -> Response:
     """Retrieve social page by id"""
@@ -62,8 +63,8 @@ def get_one(social_id: UUID) -> Response:
 @body(social_schema)
 @response(social_schema)
 @other_responses({
-    404: 'Not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_one(kwargs: dict, social_id: UUID) -> Response:
     """Update social page"""
@@ -78,8 +79,8 @@ def update_one(kwargs: dict, social_id: UUID) -> Response:
 @admin_required
 @response(social_schema)
 @other_responses({
-    404: 'User not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_user_socials(user_id: UUID) -> Response:
     """Retrieve user's social page"""
@@ -93,8 +94,8 @@ def get_user_socials(user_id: UUID) -> Response:
 @body(social_schema)
 @response(social_schema)
 @other_responses({
-    404: 'User not found',
-    403: 'You are not allowed to perform this operation'
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def update_user_socials(kwargs: dict, user_id: UUID) -> Response:
     """Update user's social page"""
