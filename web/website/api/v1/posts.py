@@ -7,13 +7,14 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
-from ...schemas import PostSchema, PostFieldSchema, PostSortSchema, NotFoundSchema, ForbiddenSchema
+from ...schemas import (PostSchema, PostFieldSchema, PostSortSchema, NotFoundSchema,
+                        ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required, delete_image
 
 for_posts = Blueprint('for_posts', __name__)
 
 post_schema = PostSchema()
-posts_schema = PostSchema(many=True)
+posts_schema = PaginatedSchema(PostSchema(many=True))
 
 
 @for_posts.route('/posts', methods=['POST'])
@@ -40,18 +41,22 @@ def create_one(kwargs: dict[str, str]) -> Response:
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
 @arguments(PostSortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({200: posts_schema})
 def get_all(fields: dict[str, list[str]],
-            sort: dict[str, list[str]]) -> Response:
+            sort: dict[str, list[str]],
+            pagination: dict[str, int]) -> Response:
     """Get all posts"""
     mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
-    posts, only = sanitize_query(fields=fields,
-                                 filter=None,
-                                 sort=sort,
-                                 obj=Post,
-                                 model=Post,
-                                 mapping=mapping)  # type: ignore[arg-type]
-    return PostSchema(many=True, only=only).dump(posts)
+    posts, only, pagination = sanitize_query(fields=fields,
+                                             filter=None,
+                                             sort=sort,
+                                             pagination=pagination,
+                                             obj=Post,
+                                             model=Post,
+                                             mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(PostSchema(many=True, only=only))().dump({'results': posts,
+                                                                    'pagination': pagination})
 
 
 @for_posts.route('/posts/<int:post_id>', methods=['GET'])
@@ -101,39 +106,47 @@ def delete_one(post_id: int) -> tuple[str, int]:
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
 @arguments(PostSortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({
     200: posts_schema,
     404: (NotFoundSchema, 'User not found')
 })
 def get_user_posts(fields: dict[str, list[str]],
                    sort: dict[str, list[str]],
+                   pagination: dict[str, int],
                    user_id: UUID) -> Response:
     """Retrieve user's posts"""
     user = get_or_404(User, user_id)
     mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
-    posts, only = sanitize_query(fields=fields,
-                                 filter=None,
-                                 sort=sort,
-                                 obj=user.posts,
-                                 model=Post,
-                                 mapping=mapping)  # type: ignore[arg-type]
-    return PostSchema(many=True, only=only).dump(posts)
+    posts, only, pagination = sanitize_query(fields=fields,
+                                             filter=None,
+                                             sort=sort,
+                                             pagination=pagination,
+                                             obj=user.posts,
+                                             model=Post,
+                                             mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(PostSchema(many=True, only=only))().dump({'results': posts,
+                                                                    'pagination': pagination})
 
 
 @for_posts.route('/me/posts', methods=['GET'])
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
 @arguments(PostSortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({200: posts_schema})
 def my_posts(fields: dict[str, list[str]],
-             sort: dict[str, list[str]]) -> Response:
+             sort: dict[str, list[str]],
+             pagination: dict[str, int]) -> Response:
     """Retrieve my posts"""
     user: User = token_auth.current_user()
     mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
-    posts, only = sanitize_query(fields=fields,
-                                 filter=None,
-                                 sort=sort,
-                                 obj=user.posts,
-                                 model=Post,
-                                 mapping=mapping)  # type: ignore[arg-type]
-    return PostSchema(many=True, only=only).dump(posts)
+    posts, only, pagination = sanitize_query(fields=fields,
+                                             filter=None,
+                                             sort=sort,
+                                             pagination=pagination,
+                                             obj=user.posts,
+                                             model=Post,
+                                             mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(PostSchema(many=True, only=only))().dump({'results': posts,
+                                                                    'pagination': pagination})

@@ -9,13 +9,13 @@ from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import SocialMedia, User, get_or_404
 from ...schemas import (SocialMediaSchema, SocialsFieldSchema, SocialsFilterSchema, SocialsSortSchema,
-                        NotFoundSchema, ForbiddenSchema)
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required
 
 for_socials = Blueprint('for_socials', __name__)
 
 social_schema = SocialMediaSchema()
-socials_schema = SocialMediaSchema(many=True)
+socials_schema = PaginatedSchema(SocialMediaSchema(many=True))
 
 
 @for_socials.route('/socials', methods=['GET'])
@@ -24,6 +24,7 @@ socials_schema = SocialMediaSchema(many=True)
 @arguments(SocialsFieldSchema(only=['fields']))
 @arguments(SocialsFilterSchema())
 @arguments(SocialsSortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({
     200: socials_schema,
     403: (ForbiddenSchema, 'You are not allowed to perform this operation')
@@ -31,16 +32,19 @@ socials_schema = SocialMediaSchema(many=True)
 def get_all(
         fields: dict[str, list[str]],
         filter: dict[str, Any],
-        sort: dict[str, list[str]]) -> Response:
+        sort: dict[str, list[str]],
+        pagination: dict[str, int]) -> Response:
     """Retrieve all socials"""
     mapping = {'fields': SocialsFieldSchema, 'filter': SocialsFilterSchema, 'sort': SocialsSortSchema}
-    socials, only = sanitize_query(fields=fields,
-                                   filter=filter,
-                                   sort=sort,
-                                   obj=SocialMedia,
-                                   model=SocialMedia,
-                                   mapping=mapping)  # type: ignore[arg-type]
-    return SocialMediaSchema(many=True, only=only).dump(socials)
+    socials, only, pagination = sanitize_query(fields=fields,
+                                               filter=filter,
+                                               sort=sort,
+                                               pagination=pagination,
+                                               obj=SocialMedia,
+                                               model=SocialMedia,
+                                               mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(SocialMediaSchema(many=True, only=only))().dump({'results': socials,
+                                                                            'pagination': pagination})
 
 
 @for_socials.route('/socials/<uuid:social_id>', methods=['GET'])

@@ -1,12 +1,11 @@
 from datetime import datetime, date
 import re
-from typing import Any
+from typing import Any, Type
 
-from marshmallow import validate, validates, ValidationError, post_load
+from marshmallow import validate, validates, ValidationError, post_load, Schema
 import sqlalchemy as sa
 from webargs import fields
 from werkzeug.exceptions import Forbidden, NotFound
-
 
 from . import ma, db, token_auth
 from .models import User, Post, SocialMedia, Entry, Service
@@ -258,34 +257,36 @@ class UserSortSchema(ma.Schema):  # type: ignore[name-defined]
     username = ma.String()
     registered_on = ma.DateTime()
     confirmed_on = ma.DateTime()
-    sort = fields.DelimitedList(ma.String(), description=("""
-                                                    Possible values:
-                                                    "username",
-                                                    "registered_on",
-                                                    "confirmed_on",
-                                                    """))
+    sort = fields.DelimitedList(ma.String(),
+                                load_default=['registered_on'],
+                                description=("""
+                                                Possible values:
+                                                "username",
+                                                "registered_on",
+                                                "confirmed_on",
+                                                """))
 
 
 class SocialsFieldSchema(SocialMediaSchema):  # type: ignore[name-defined]
     fields = fields.DelimitedList(ma.String(),
                                   description=("""
-                                                    Possible values:
-                                                    "uuid",
-                                                    "url",
-                                                    "user",
-                                                    "avatar",
-                                                    "first_name",
-                                                    "last_name",
-                                                    "phone_number",
-                                                    "viber",
-                                                    "whatsapp",
-                                                    "instagram",
-                                                    "telegram",
-                                                    "youtube",
-                                                    "website",
-                                                    "vk",
-                                                    "about"
-                                                    """))
+                                                Possible values:
+                                                "uuid",
+                                                "url",
+                                                "user",
+                                                "avatar",
+                                                "first_name",
+                                                "last_name",
+                                                "phone_number",
+                                                "viber",
+                                                "whatsapp",
+                                                "instagram",
+                                                "telegram",
+                                                "youtube",
+                                                "website",
+                                                "vk",
+                                                "about"
+                                                """))
 
 
 class SocialsFilterSchema(ma.Schema):  # type: ignore[name-defined]
@@ -301,6 +302,7 @@ class SocialsSortSchema(ma.Schema):  # type: ignore[name-defined]
     first_name = ma.String()
     last_name = ma.String()
     sort = fields.DelimitedList(ma.String(),
+                                load_default=['first_name'],
                                 description=("""
                                                 Possible values:
                                                 "first_name",
@@ -321,10 +323,13 @@ class ServiceFieldSchema(ServiceSchema):  # type: ignore[name-defined]
 
 
 class ServiceSortSchema(ma.Schema):  # type: ignore[name-defined]
+    name = ma.String()
     duration = ma.String()
     sort = fields.DelimitedList(ma.String(),
+                                load_default=['name'],
                                 description=("""
                                                 Possible values:
+                                                "name",
                                                 "duration"
                                                 """))
 
@@ -344,10 +349,13 @@ class PostFieldSchema(PostSchema):  # type: ignore[name-defined]
 
 
 class PostSortSchema(ma.Schema):  # type: ignore[name-defined]
+    title = ma.String()
     posted_on = ma.String()
     sort = fields.DelimitedList(ma.String(),
+                                load_default=['-posted_on'],
                                 description=("""
                                                 Possible values:
+                                                "title",
                                                 "posted_on"
                                                 """))
 
@@ -371,12 +379,43 @@ class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]
     date = ma.String()
     time = ma.String()
     sort = fields.DelimitedList(ma.String(),
+                                load_default=['-date'],
                                 description=("""
                                                 Possible values:
                                                 "created_on",
                                                 "date",
                                                 "time"
                                                 """))
+
+
+class PaginationSchema(ma.Schema):  # type: ignore[name-defined]
+    class Meta:
+        ordered = True
+    page = ma.Integer(load_default=1)
+    per_page = ma.Integer(load_default=25)
+    last_page = ma.Integer(dump_only=True)
+    total = ma.Integer(dump_only=True)
+
+    @validates('page')
+    def validate_page(self, value: int) -> None:
+        if value <= 0:
+            raise ValidationError('Page number cannot be lower than 1')
+
+    @validates('per_page')
+    def validate_per_page(self, value: int) -> None:
+        if not (0 < value <= 50):
+            raise ValidationError('Results per page parameter should be a positive number no greater than 50')
+
+
+def PaginatedSchema(
+        schema: Type[Schema],
+        pagination_schema: Type[Schema] = PaginationSchema
+) -> Type[Schema]:
+    class PaginateSchema(ma.Schema):  # type: ignore[name-defined]
+        pagination = ma.Nested(pagination_schema)
+        results = ma.Nested(schema, many=True)
+    PaginateSchema.__name__ = f'Paginated{schema.__class__.__name__}'
+    return PaginateSchema
 
 
 class NotFoundSchema(ma.Schema):  # type: ignore[name-defined]

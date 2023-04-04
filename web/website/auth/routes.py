@@ -8,7 +8,6 @@ from werkzeug.wrappers.response import Response
 from .forms import (RegistrationForm, LoginForm, PasswordResetRequestForm,
                     PasswordResetForm)
 from .. import db
-from ..api.v1.users import get_one
 from ..models import User, SocialMedia, current_user
 from ..utils import send_email
 

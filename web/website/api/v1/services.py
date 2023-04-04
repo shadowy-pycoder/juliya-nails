@@ -5,13 +5,14 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Service, get_or_404
-from ...schemas import ServiceSchema, ServiceFieldSchema, ServiceSortSchema, NotFoundSchema, ForbiddenSchema
+from ...schemas import (ServiceSchema, ServiceFieldSchema, ServiceSortSchema, NotFoundSchema,
+                        ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required
 
 for_services = Blueprint('for_services', __name__)
 
 service_schema = ServiceSchema()
-services_schema = ServiceSchema(many=True)
+services_schema = PaginatedSchema(ServiceSchema(many=True))
 
 
 @for_services.route('/services', methods=['POST'])
@@ -37,18 +38,22 @@ def create_one(kwargs: dict[str, str | float]) -> Response:
 @authenticate(token_auth)
 @arguments(ServiceFieldSchema(only=['fields']))
 @arguments(ServiceSortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({200: services_schema})
 def get_all(fields: dict[str, list[str]],
-            sort: dict[str, list[str]]) -> Response:
+            sort: dict[str, list[str]],
+            pagination: dict[str, int]) -> Response:
     """Get all services"""
     mapping = {'fields': ServiceFieldSchema, 'sort': ServiceSortSchema}
-    services, only = sanitize_query(fields=fields,
-                                    filter=None,
-                                    sort=sort,
-                                    obj=Service,
-                                    model=Service,
-                                    mapping=mapping)  # type: ignore[arg-type]
-    return ServiceSchema(many=True, only=only).dump(services)
+    services, only, pagination = sanitize_query(fields=fields,
+                                                filter=None,
+                                                sort=sort,
+                                                pagination=pagination,
+                                                obj=Service,
+                                                model=Service,
+                                                mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(ServiceSchema(many=True, only=only))().dump({'results': services,
+                                                                        'pagination': pagination})
 
 
 @for_services.route('/services/<int:service_id>', methods=['GET'])

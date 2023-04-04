@@ -7,14 +7,14 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
-from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema,
-                        EntrySortSchema, NotFoundSchema, ForbiddenSchema)
+from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema,
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required
 
 for_entries = Blueprint('for_entries', __name__)
 
 entry_schema = EntrySchema()
-entries_schema = EntrySchema(many=True)
+entries_schema = PaginatedSchema(EntrySchema(many=True))
 create_entry_schema = CreateEntrySchema()
 update_entry_schema = CreateEntrySchema(partial=True)
 
@@ -47,21 +47,25 @@ def create_one(kwargs: dict) -> Response:
 @admin_required
 @arguments(EntryFieldSchema(only=['fields']))
 @arguments(EntrySortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({
     200: entries_schema,
     403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_all(fields: dict[str, list[str]],
-            sort: dict[str, list[str]]) -> Response:
+            sort: dict[str, list[str]],
+            pagination: dict[str, int]) -> Response:
     """Get all entries"""
     mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
-    entries, only = sanitize_query(fields=fields,
-                                   filter=None,
-                                   sort=sort,
-                                   obj=Entry,
-                                   model=Entry,
-                                   mapping=mapping)  # type: ignore[arg-type]
-    return EntrySchema(many=True, only=only).dump(entries)
+    entries, only, pagination = sanitize_query(fields=fields,
+                                               filter=None,
+                                               sort=sort,
+                                               pagination=pagination,
+                                               obj=Entry,
+                                               model=Entry,
+                                               mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(EntrySchema(many=True, only=only))().dump({'results': entries,
+                                                                      'pagination': pagination})
 
 
 @for_entries.route('/entries/<uuid:entry_id>', methods=['GET'])
@@ -132,6 +136,7 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
 @admin_required
 @arguments(EntryFieldSchema(only=['fields']))
 @arguments(EntrySortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({
     200: entries_schema,
     404: (NotFoundSchema, 'Entry not found'),
@@ -139,17 +144,20 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
 })
 def get_user_entries(fields: dict[str, list[str]],
                      sort: dict[str, list[str]],
+                     pagination: dict[str, int],
                      user_id: UUID) -> Response:
     """Retrieve user's entries"""
     user = get_or_404(User, user_id)
     mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
-    entries, only = sanitize_query(fields=fields,
-                                   filter=None,
-                                   sort=sort,
-                                   obj=user.entries,
-                                   model=Entry,
-                                   mapping=mapping)  # type: ignore[arg-type]
-    return EntrySchema(many=True, only=only).dump(entries)
+    entries, only, pagination = sanitize_query(fields=fields,
+                                               filter=None,
+                                               sort=sort,
+                                               pagination=pagination,
+                                               obj=user.entries,
+                                               model=Entry,
+                                               mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(EntrySchema(many=True, only=only))().dump({'results': entries,
+                                                                      'pagination': pagination})
 
 
 @for_entries.route('/services/<int:service_id>/entries', methods=['GET'])
@@ -157,6 +165,7 @@ def get_user_entries(fields: dict[str, list[str]],
 @admin_required
 @arguments(EntryFieldSchema(only=['fields']))
 @arguments(EntrySortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({
     200: entries_schema,
     404: (NotFoundSchema, 'Entry not found'),
@@ -164,33 +173,40 @@ def get_user_entries(fields: dict[str, list[str]],
 })
 def get_service_entries(fields: dict[str, list[str]],
                         sort: dict[str, list[str]],
+                        pagination: dict[str, int],
                         service_id: int) -> Response:
     """Retrieve service's entries"""
     service = get_or_404(Service, service_id)
     mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
-    entries, only = sanitize_query(fields=fields,
-                                   filter=None,
-                                   sort=sort,
-                                   obj=service.entries,
-                                   model=Entry,
-                                   mapping=mapping)  # type: ignore[arg-type]
-    return EntrySchema(many=True, only=only).dump(entries)
+    entries, only, pagination = sanitize_query(fields=fields,
+                                               filter=None,
+                                               sort=sort,
+                                               pagination=pagination,
+                                               obj=service.entries,
+                                               model=Entry,
+                                               mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(EntrySchema(many=True, only=only))().dump({'results': entries,
+                                                                      'pagination': pagination})
 
 
 @for_entries.route('/me/entries', methods=['GET'])
 @authenticate(token_auth)
 @arguments(EntryFieldSchema(only=['fields']))
 @arguments(EntrySortSchema(only=['sort']))
+@arguments(PaginationSchema())
 @other_responses({200: entries_schema})
 def my_entries(fields: dict[str, list[str]],
-               sort: dict[str, list[str]]) -> Response:
+               sort: dict[str, list[str]],
+               pagination: dict[str, int]) -> Response:
     """Retrieve my entries"""
     user: User = token_auth.current_user()
     mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
-    entries, only = sanitize_query(fields=fields,
-                                   filter=None,
-                                   sort=sort,
-                                   obj=user.entries,
-                                   model=Entry,
-                                   mapping=mapping)  # type: ignore[arg-type]
-    return EntrySchema(many=True, only=only).dump(entries)
+    entries, only, pagination = sanitize_query(fields=fields,
+                                               filter=None,
+                                               sort=sort,
+                                               pagination=pagination,
+                                               obj=user.entries,
+                                               model=Entry,
+                                               mapping=mapping)  # type: ignore[arg-type]
+    return PaginatedSchema(EntrySchema(many=True, only=only))().dump({'results': entries,
+                                                                      'pagination': pagination})

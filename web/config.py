@@ -22,7 +22,7 @@ class Config:
     DEFAULT_AVATAR = 'default.jpg'
     APIFAIRY_TITLE = 'JuliyaNails API'
     APIFAIRY_VERSION = '1.0'
-    APIFAIRY_UI = 'elements'
+    APIFAIRY_UI = 'swagger_ui'
     APIFAIRY_UI_PATH = '/api/docs'
 
 
