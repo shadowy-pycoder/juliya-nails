@@ -61,7 +61,7 @@ def integrity_error(error: IntegrityError) -> Response:
 
 @api.errorhandler(SQLAlchemyError)
 def sqlalchemy_error(error: SQLAlchemyError) -> Response:
-    if current_app.config['DEBUG'] is True:
+    if current_app.config['DEBUG']:
         response = jsonify({
             'code': InternalServerError.code,
             'message': 'Database error',

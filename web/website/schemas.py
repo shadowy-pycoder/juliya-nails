@@ -11,6 +11,8 @@ from . import ma, db, token_auth
 from .models import User, Post, SocialMedia, Entry, Service
 from .utils import PATTERNS
 
+paginated_cache: dict[Type[Schema], Type[Schema]] = {}
+
 
 class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:
@@ -241,6 +243,9 @@ class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]
 
 
 class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    username = ma.String(description=("""
+                                        Find user by username
+                                        """))
     confirmed = ma.Boolean(validate=validate.OneOf([True, False]),
                            description=("""
                                         Possible values:
@@ -370,7 +375,7 @@ class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
                                                 "services",
                                                 "created_on",
                                                 "date",
-                                                "time,
+                                                "time",
                                                 """))
 
 
@@ -411,10 +416,16 @@ def PaginatedSchema(
         schema: Type[Schema],
         pagination_schema: Type[Schema] = PaginationSchema
 ) -> Type[Schema]:
+    if schema in paginated_cache:
+        return paginated_cache[schema]
+
     class PaginateSchema(ma.Schema):  # type: ignore[name-defined]
+        class Meta:
+            ordered = True
         pagination = ma.Nested(pagination_schema)
         results = ma.Nested(schema, many=True)
     PaginateSchema.__name__ = f'Paginated{schema.__class__.__name__}'
+    paginated_cache[schema] = PaginateSchema
     return PaginateSchema
 
 

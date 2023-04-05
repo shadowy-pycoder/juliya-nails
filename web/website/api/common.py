@@ -74,16 +74,24 @@ def sanitize_query(fields: dict[str, list[str]] | None,
     if filter:
         filters: dict = sanitize_fields(filter, mapping['filter'], param='filter')  # type: ignore[assignment]
         mapped_filters: dict = {getattr(model, param): value for param, value in filters.items()}
-        data = data.filter(sa.and_(*[criterion == value for criterion, value in mapped_filters.items()]))
+        data = data.filter(sa.and_(*[criterion.ilike(value) if isinstance(value, str)
+                                     else criterion == value
+                                     for criterion, value in mapped_filters.items()]))
     if sort:
         criteria = sanitize_fields(sort, mapping['sort'], param='sort')
         data = data.order_by(sa.text(', '.join(criterion for criterion in criteria)))
     count = db.session.scalar(sa.select(sa.func.count()).select_from(data.subquery()))
-    pagination['total'] = count if count else 0
-    quotient, remainder = divmod(pagination['total'], pagination['per_page'])
-    pagination['last_page'] = quotient + 1 if remainder else quotient
-    if pagination['page'] > pagination['last_page']:
-        pagination['page'] = pagination['last_page']
-    data = data.limit(pagination['per_page']).offset((pagination['page']-1)*pagination['per_page'])
+    if not count:
+        pagination['total'] = 0
+        pagination['last_page'] = 1
+        offset = 0
+    else:
+        pagination['total'] = count
+        quotient, remainder = divmod(pagination['total'], pagination['per_page'])
+        pagination['last_page'] = quotient + 1 if remainder else quotient
+        if pagination['page'] > pagination['last_page']:
+            pagination['page'] = pagination['last_page']
+        offset = (pagination['page'] - 1) * pagination['per_page']
+    data = data.limit(pagination['per_page']).offset(offset)
     data = db.session.scalars(data).all()  # type: ignore[assignment]
     return data, only, pagination  # type: ignore[return-value]

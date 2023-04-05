@@ -29,8 +29,8 @@ admin_user_schema = AdminUserSchema(partial=True)
 def create_one(kwargs: dict[str, str]) -> Response:
     """Create a new user"""
     user = User(**kwargs)
-    user.confirmed = True
-    user.confirmed_on = func.now()
+    # user.confirmed = True
+    # user.confirmed_on = func.now()
     db.session.add(user)
     db.session.commit()
     registered_user = db.session.scalar(sa.select(User).filter_by(username=user.username))
@@ -75,16 +75,6 @@ def get_all(fields: dict[str, list[str]],
 def get_one(user_id: Annotated[UUID, 'UUID of the user to retrieve']) -> Response:
     """Retrieve user by uuid"""
     user = get_or_404(User, user_id)
-    return user
-
-
-@for_users.route('/users/<username>', methods=['GET'])
-@authenticate(token_auth)
-@response(user_schema)
-@other_responses({404: (NotFoundSchema, 'User not found')})
-def get_username(username: str) -> Response:
-    """Retrieve user by username"""
-    user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
     return user
 
 

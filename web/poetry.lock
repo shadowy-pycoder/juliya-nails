@@ -529,6 +529,21 @@ WTForms = "*"
 email = ["email-validator"]
 
 [[package]]
+name = "flask2postman"
+version = "1.4.4"
+description = "Generate a Postman collection from your Flask application"
+category = "dev"
+optional = false
+python-versions = "*"
+files = [
+    {file = "flask2postman-1.4.4-py3-none-any.whl", hash = "sha256:c2ad2244b52b59197d4decfd39d7d6df1c21d5ee6acec8e7feb73210c688ceba"},
+    {file = "flask2postman-1.4.4.tar.gz", hash = "sha256:f3bfae7c2c7e1c3ce3de3cfecef3d4fdd17ed9eb17479ec94f59a86a9b30a717"},
+]
+
+[package.dependencies]
+Flask = "*"
+
+[[package]]
 name = "greenlet"
 version = "2.0.2"
 description = "Lightweight in-process concurrent programming"
@@ -1559,4 +1574,4 @@ email = ["email-validator"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "64468e7525ea20a086f98663b03061f5c43676511db85c10e786866aeb1c088a"
+content-hash = "1d346a440690b3743670068f3718cef76d0f4c01662919a2fd6569dacba1b12d"
