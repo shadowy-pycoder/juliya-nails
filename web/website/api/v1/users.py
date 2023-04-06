@@ -5,7 +5,6 @@ from apifairy import authenticate, arguments, body, response, other_responses
 from flask import abort, Blueprint, jsonify, url_for
 from flask.wrappers import Response
 import sqlalchemy as sa
-from sqlalchemy.sql import func
 
 from ..common import sanitize_query
 from ... import db, token_auth
@@ -29,8 +28,6 @@ admin_user_schema = AdminUserSchema(partial=True)
 def create_one(kwargs: dict[str, str]) -> Response:
     """Create a new user"""
     user = User(**kwargs)
-    # user.confirmed = True
-    # user.confirmed_on = func.now()
     db.session.add(user)
     db.session.commit()
     registered_user = db.session.scalar(sa.select(User).filter_by(username=user.username))

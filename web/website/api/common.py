@@ -41,7 +41,8 @@ def fields(spec: dict[str, dict | Any]) -> dict[str, dict]:
 
 def sanitize_fields(fields: dict[str, list[str]] | dict[str, Any],
                     schema: Type[Schema],
-                    param: str = 'fields') -> list | dict:
+                    param: str = 'fields'
+                    ) -> list | dict:
     formatted_fields = set()
     if param == 'fields':
         for field in fields[param]:
@@ -68,8 +69,10 @@ def sanitize_query(fields: dict[str, list[str]] | None,
                    pagination: dict[str, int],
                    obj: Type[DeclarativeMeta] | WriteOnlyCollection,
                    model: Type[DeclarativeMeta],
-                   mapping: dict[str, Type[Schema]]) -> tuple[Sequence, list | None, dict[str, int]]:
-    only = sanitize_fields(fields, mapping['fields']) if fields else None
+                   mapping: dict[str, Type[Schema]]
+                   ) -> tuple[Sequence, list | None, dict[str, int]]:
+    if not fields or not (only := sanitize_fields(fields, mapping['fields'])):
+        only = None
     data = obj.select() if isinstance(obj, WriteOnlyCollection) else sa.select(obj)
     if filter:
         filters: dict = sanitize_fields(filter, mapping['filter'], param='filter')  # type: ignore[assignment]

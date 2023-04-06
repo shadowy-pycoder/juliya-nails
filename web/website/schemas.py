@@ -68,6 +68,7 @@ class UserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
 class AdminUserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:
         model = User
+        description = 'This schema represents a user.'
 
     uuid = ma.UUID(dump_only=True)
     url = ma.URLFor('api.for_users.get_one', values={'user_id': '<uuid>'}, dump_only=True)
@@ -398,7 +399,7 @@ class PaginationSchema(ma.Schema):  # type: ignore[name-defined]
         ordered = True
     page = ma.Integer(load_default=1)
     per_page = ma.Integer(load_default=25)
-    last_page = ma.Integer(dump_only=True)
+    last_page = ma.Integer(load_default=1, dump_only=True)
     total = ma.Integer(dump_only=True)
 
     @validates('page')

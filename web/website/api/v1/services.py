@@ -52,6 +52,7 @@ def get_all(fields: dict[str, list[str]],
                                                 obj=Service,
                                                 model=Service,
                                                 mapping=mapping)  # type: ignore[arg-type]
+    print(only)
     return PaginatedSchema(ServiceSchema(many=True, only=only))().dump({'results': services,
                                                                         'pagination': pagination})
 
