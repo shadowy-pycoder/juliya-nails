@@ -6,7 +6,7 @@
         {{ form.hidden_tag() }}
         <fieldset class="form-group">
             <legend class="border-bottom mb-4">{{ legend }}</legend>
-            {{render_icon_field(form.email, "fa-solid fa-envelope fa-xl text-light", "bg-primary")}}
+            {{render_icon_field(form.login, "fa-solid fa-envelope fa-xl text-light", "bg-primary")}}
             {{render_icon_field(form.password, "fa-solid fa-key fa-xl text-light", "bg-primary")}}
             <div class="form-check">
                 {{ form.remember(class="form-check-input") }}

@@ -54,7 +54,9 @@ def login() -> Response | str:
         return redirect(url_for('main.home'))
     form = LoginForm()
     if form.validate_on_submit():
-        user = db.session.scalar(sa.select(User).filter_by(email=form.email.data.lower()))
+        user = db.session.scalar(sa.select(User).filter(User.username.ilike(form.login.data.strip())))
+        if not user:
+            user = db.session.scalar(sa.select(User).filter(User.email.ilike(form.login.data.strip())))
         if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember.data)
             next_page = request.args.get('next')

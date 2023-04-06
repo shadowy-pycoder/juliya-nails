@@ -87,31 +87,42 @@ class RegistrationForm(CustomValidatorsMixin, FlaskForm):
             Length(min=2, max=20),
             Regexp(PATTERNS['username'],
                    message='Usernames must have only letters, numbers, dots or underscores'),
-            IntegrityCheck(model=User)])
+            IntegrityCheck(model=User)],
+        render_kw={"placeholder": "Enter your username"})
     email = StringField('Email',
-                        validators=[DataRequired(), Email(), Length(max=100), IntegrityCheck(model=User)])
-    password = PasswordField('Password', validators=[DataRequired(), Length(min=8)])
+                        validators=[DataRequired(),
+                                    Email(),
+                                    Length(max=100),
+                                    IntegrityCheck(model=User)],
+                        render_kw={"placeholder": "Enter your email"})
+    password = PasswordField('Password', validators=[DataRequired(), Length(min=8)],
+                             render_kw={"placeholder": "Enter your password"})
     confirm_password = PasswordField('Confirm Password',
-                                     validators=[DataRequired(), EqualTo('password')])
+                                     validators=[DataRequired(), EqualTo('password')],
+                                     render_kw={"placeholder": "Repeat your password"})
     submit = SubmitField('Sign Up')
 
 
 class LoginForm(FlaskForm):
-    email = StringField('Email',
-                        validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    login = StringField('Username or Email', validators=[DataRequired()],
+                        render_kw={"placeholder": "Enter your username or email"})
+    password = PasswordField('Password', validators=[DataRequired()],
+                             render_kw={"placeholder": "Enter your password"})
     remember = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
 
 class PasswordResetRequestForm(FlaskForm):
     email = StringField('Email',
-                        validators=[DataRequired(), Email(), Length(max=100)])
+                        validators=[DataRequired(), Email(), Length(max=100)],
+                        render_kw={"placeholder": "Enter your email"})
     submit = SubmitField('Reset Password')
 
 
 class PasswordResetForm(CustomValidatorsMixin, FlaskForm):
-    password = PasswordField('New Password', validators=[DataRequired(), Length(min=8)])
+    password = PasswordField('New Password', validators=[DataRequired(), Length(min=8)],
+                             render_kw={"placeholder": "Enter your password"})
     confirm_password = PasswordField('Confirm New Password',
-                                     validators=[DataRequired(), EqualTo('password')])
+                                     validators=[DataRequired(), EqualTo('password')],
+                                     render_kw={"placeholder": "Repeat your password"})
     submit = SubmitField('Reset Password')
