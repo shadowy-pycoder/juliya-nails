@@ -1,6 +1,6 @@
-from datetime import datetime, date as date_, time as time_
+from datetime import datetime, date as date_, time as time_, timedelta
 from decimal import Decimal
-from typing import Union, TypeVar, Type
+from typing import Union, TypeVar, Type, Literal
 import uuid
 from uuid import UUID as UUID_
 
@@ -210,6 +210,18 @@ class Entry(db.Model):  # type: ignore[name-defined]
 
     def __repr__(self) -> str:
         return f'Entry({self.uuid}, {self.date}, {self.time}, {self.services}, {self.user.username})'
+
+    @property
+    def timestamp(self) -> float:
+        return datetime.combine(self.date, self.time).timestamp()
+
+    @property
+    def duration(self) -> Decimal | Literal[0]:
+        return sum(service.duration for service in self.services)
+
+    @property
+    def ending_time(self) -> float:
+        return self.timestamp + timedelta(hours=float(self.duration)).total_seconds()
 
 
 class Service(UpdateMixin, db.Model):  # type: ignore[name-defined]

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from urllib.parse import urlparse, ParseResult
 from uuid import UUID
 
@@ -133,6 +134,26 @@ def create_entry(username: str) -> Response | str:
                       time=form.time.data,
                       user_id=current_user.uuid)
         entry.services.extend(service_types)
+        prev_entry = db.session.scalar(
+            sa.select(Entry)
+            .filter(
+                sa.and_(
+                    Entry.date == entry.date,
+                    Entry.time <= entry.time))
+            .order_by(Entry.date.desc(), Entry.time.desc()))
+        if prev_entry and prev_entry.ending_time > entry.timestamp:
+            flash('Choose a different time (previous_entry)', 'danger')
+            return render_template('users/create_entry.html', title='Profile', form=form, user=user)
+        next_entry = db.session.scalar(
+            sa.select(Entry)
+            .filter(
+                sa.and_(
+                    Entry.date == entry.date,
+                    Entry.time > entry.time))
+            .order_by(Entry.date, Entry.time))
+        if next_entry and next_entry.timestamp < entry.ending_time:
+            flash('Choose a different time (next_entry)', 'danger')
+            return render_template('users/create_entry.html', title='Profile', form=form, user=user)
         db.session.add(entry)
         db.session.commit()
         flash('New entry has been created.', 'success')
@@ -161,18 +182,41 @@ def edit_entry(username: str, entry_id: UUID) -> Response | str:
         entry.time = form.time.data
         entry.services.clear()
         entry.services.extend(service_types)
+        prev_entry = db.session.scalar(
+            sa.select(Entry)
+            .filter(
+                sa.and_(
+                    Entry.date == entry.date,
+                    Entry.time <= entry.time,
+                    Entry.uuid != entry.uuid
+                ))
+            .order_by(Entry.date.desc(), Entry.time.desc()))
+        if prev_entry and prev_entry.ending_time > entry.timestamp:
+            flash('Choose a different time (previous entry)', 'danger')
+            return render_template('users/edit_entry.html', title='Profile', form=form, user=user)
+        next_entry = db.session.scalar(
+            sa.select(Entry)
+            .filter(
+                sa.and_(
+                    Entry.date == entry.date,
+                    Entry.time > entry.time))
+            .order_by(Entry.date, Entry.time))
+        if next_entry and next_entry.timestamp < entry.ending_time:
+            flash('Choose a different time(next_entry)', 'danger')
+            return render_template('users/edit_entry.html', title='Profile', form=form, user=user)
+
         db.session.commit()
         flash('Your entry has been updated.', 'success')
         return redirect(url_for('users.my_entries', username=username))
     elif request.method == 'GET':
-        pass
+        flash(str(entry.ending_time))
     return render_template('users/edit_entry.html', title='Profile', form=form, user=user)
 
 
-@users.route("/<username>/profile/cancel-entry/<uuid:entry_id>", methods=['GET', 'POST'])
-@login_required
-@email_confirmed
-@current_user_required
+@ users.route("/<username>/profile/cancel-entry/<uuid:entry_id>", methods=['GET', 'POST'])
+@ login_required
+@ email_confirmed
+@ current_user_required
 def cancel_entry(username: str, entry_id: UUID) -> Response:
     entry = get_or_404(Entry, entry_id)
     if entry.user.username != username:
@@ -183,10 +227,10 @@ def cancel_entry(username: str, entry_id: UUID) -> Response:
     return redirect(url_for('users.my_entries', username=username))
 
 
-@users.route("/<username>/profile/my-entries", methods=['GET', 'POST'])
-@login_required
-@email_confirmed
-@current_user_required
+@ users.route("/<username>/profile/my-entries", methods=['GET', 'POST'])
+@ login_required
+@ email_confirmed
+@ current_user_required
 def my_entries(username: str) -> str:
     entries = db.session.scalars(current_user.entries
                                  .select()
@@ -194,10 +238,10 @@ def my_entries(username: str) -> str:
     return render_template('users/my_entries.html', title='Profile', entries=entries)
 
 
-@users.route("/<username>/profile/update", methods=['GET', 'POST'])
-@login_required
-@email_confirmed
-@current_user_required
+@ users.route("/<username>/profile/update", methods=['GET', 'POST'])
+@ login_required
+@ email_confirmed
+@ current_user_required
 def update_profile(username: str) -> Response | str:
     user = db.session.scalar(sa.select(User).filter_by(username=username)) or abort(404)
     form = UpdateProfileForm()

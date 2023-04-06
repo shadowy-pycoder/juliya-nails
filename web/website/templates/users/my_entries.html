@@ -6,7 +6,7 @@
     <ul>
         {% for service in entry.services %}
 
-        <li>{{service.name}}</li>
+        <li>{{service.name}}{{service.duration}}</li>
         {%endfor%}
     </ul>
     <li>{{entry.created_on}}</li>
