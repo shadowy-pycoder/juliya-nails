@@ -1,10 +1,12 @@
+from typing import Any
+
 from flask import jsonify, current_app
 from flask.wrappers import Response
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from werkzeug.exceptions import HTTPException, InternalServerError, Unauthorized, Forbidden
 
 from . import api
-from ... import basic_auth, token_auth
+from ... import basic_auth, token_auth, apifairy
 
 
 @basic_auth.error_handler
@@ -74,5 +76,19 @@ def sqlalchemy_error(error: SQLAlchemyError) -> Response:
             'description': InternalServerError.description,
         })
     response.status_code = 500
+    response.content_type = 'application/json'
+    return response
+
+
+@apifairy.error_handler
+def validation_error(code: int, messages: dict[str, Any]) -> Response:
+    response = jsonify({
+        'code': code,
+        'message': 'Validation Error',
+        'description': ('The server found one or more errors in the '
+                        'information that you sent.'),
+        'errors': messages,
+    })
+    response.status_code = code
     response.content_type = 'application/json'
     return response

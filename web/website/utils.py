@@ -5,7 +5,7 @@ import secrets
 from threading import Thread
 from typing import ParamSpec, TypeVar, Any
 
-from flask import current_app, flash, redirect, url_for, render_template, Flask, abort, request
+from flask import current_app, flash, redirect, url_for, render_template, Flask, abort
 from flask_mail import Message
 from flask_wtf.file import FileField
 from PIL import Image

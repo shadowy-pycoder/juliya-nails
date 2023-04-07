@@ -3,11 +3,11 @@ from typing import Type, Any
 from marshmallow import Schema
 import sqlalchemy as sa
 from sqlalchemy.sql.schema import Sequence
-from sqlalchemy.orm.attributes import InstrumentedAttribute
 from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.orm import WriteOnlyCollection
 
 from .. import db, apifairy
+from ..models import Entry
 
 
 @apifairy.process_apispec
@@ -122,3 +122,26 @@ def sanitize_query(fields: dict[str, list[str]] | None,
     data = data.limit(pagination['per_page']).offset(offset)
     data = db.session.scalars(data).all()  # type: ignore[assignment]
     return data, only, pagination  # type: ignore[return-value]
+
+
+def can_create_entry(entry: Entry, context: str = 'create') -> bool:
+    filters = [Entry.date == entry.date, Entry.time <= entry.time]
+    if context == 'update':
+        filters.append(Entry.uuid != entry.uuid)
+    prev_entry = db.session.scalar(
+        sa.select(Entry)
+        .filter(
+            sa.and_(*filters))
+        .order_by(Entry.date.desc(), Entry.time.desc()))
+    if prev_entry and prev_entry.ending_time > entry.timestamp:
+        return False
+    next_entry = db.session.scalar(
+        sa.select(Entry)
+        .filter(
+            sa.and_(
+                Entry.date == entry.date,
+                Entry.time > entry.time))
+        .order_by(Entry.date, Entry.time))
+    if next_entry and next_entry.timestamp < entry.ending_time:
+        return False
+    return True
