@@ -2,7 +2,7 @@ from datetime import datetime, date
 import re
 from typing import Any, Type
 
-from marshmallow import validate, validates, ValidationError, post_load, Schema
+from marshmallow import validate, validates, ValidationError, post_load, Schema, validates_schema
 import sqlalchemy as sa
 from webargs import fields
 from werkzeug.exceptions import Forbidden, NotFound
@@ -199,6 +199,9 @@ class EntrySchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     created_on = ma.auto_field(dump_only=True)
     date = ma.auto_field(required=True)
     time = ma.auto_field(required=True)
+    duration = ma.Decimal(dump_default=Entry.duration, dump_only=True)
+    timestamp = ma.Float(dump_default=Entry.timestamp, dump_only=True)
+    ending_time = ma.Float(dump_default=Entry.ending_time, dump_only=True)
 
 
 class CreateEntrySchema(EntrySchema):  # type: ignore[name-defined]
@@ -278,6 +281,12 @@ class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
                                             "confirmed_on[lt]=2023-03-27 15:00"
                                             """))
 
+    @validates_schema
+    def validate_schema(self, data: dict, **kwargs: dict) -> None:
+        if ((data.get('confirmed_on_gte', None) and data.get('confirmed_on_gt', None)) or
+                (data.get('confirmed_on_lte', None) and data.get('confirmed_on_lt', None))):
+            raise ValidationError('Cannot specify both [gte] and [gt] or [lte] and [lt] for the same key')
+
 
 class UserSortSchema(ma.Schema):  # type: ignore[name-defined]
     username = ma.String()
@@ -349,30 +358,36 @@ class ServiceFieldSchema(ServiceSchema):  # type: ignore[name-defined]
 
 
 class ServiceFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    duration = ma.Float(description=("""
+    duration = ma.Decimal(description=("""
                                     Format:
                                     "duration=2"
                                     """))
-    duration_gte = ma.Float(data_key='duration[gte]',
-                            description=("""
+    duration_gte = ma.Decimal(data_key='duration[gte]',
+                              description=("""
                                             Format:
                                             "duration[gte]=1"
                                             """))
-    duration_lte = ma.Float(data_key='duration[lte]',
-                            description=("""
+    duration_lte = ma.Decimal(data_key='duration[lte]',
+                              description=("""
                                             Format:
                                             "duration[lte]=3"
                                             """))
-    duration_gt = ma.Float(data_key='duration[gt]',
-                           description=("""
+    duration_gt = ma.Decimal(data_key='duration[gt]',
+                             description=("""
                                             Format:
                                             "duration[gt]=1"
                                             """))
-    duration_lt = ma.Float(data_key='duration[lt]',
-                           description=("""
+    duration_lt = ma.Decimal(data_key='duration[lt]',
+                             description=("""
                                             Format:
                                             "duration[lt]=3"
                                             """))
+
+    @validates_schema
+    def validate_schema(self, data: dict, **kwargs: dict) -> None:
+        if ((data.get('duration_gte', None) and data.get('duration_gt', None)) or
+                (data.get('duration_lte', None) and data.get('duration_lt', None))):
+            raise ValidationError('Cannot specify both [gte] and [gt] or [lte] and [lt] for the same key')
 
 
 class ServiceSortSchema(ma.Schema):  # type: ignore[name-defined]
@@ -427,6 +442,12 @@ class PostFilterSchema(ma.Schema):  # type: ignore[name-defined]
                                             "posted_on[lt]=2023-03-27 15:00"
                                             """))
 
+    @validates_schema
+    def validate_schema(self, data: dict, **kwargs: dict) -> None:
+        if ((data.get('posted_on_gte', None) and data.get('posted_on_gt', None)) or
+                (data.get('posted_on_lte', None) and data.get('posted_on_lt', None))):
+            raise ValidationError('Cannot specify both [gte] and [gt] or [lte] and [lt] for the same key')
+
 
 class PostSortSchema(ma.Schema):  # type: ignore[name-defined]
     title = ma.String()
@@ -451,6 +472,9 @@ class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
                                                 "created_on",
                                                 "date",
                                                 "time",
+                                                "duration",
+                                                "timestamp",
+                                                "ending_time"
                                                 """))
 
 
@@ -504,6 +528,14 @@ class EntryFilterSchema(ma.Schema):  # type: ignore[name-defined]
                                     Format:
                                     "time[lt]=15:00"
                                     """))
+
+    @validates_schema
+    def validate_schema(self, data: dict, **kwargs: dict) -> None:
+        if ((data.get('date_gte', None) and data.get('date_gt', None)) or
+                (data.get('date_lte', None) and data.get('date_lt', None)) or
+                (data.get('time_gte', None) and data.get('time_gt', None)) or
+                (data.get('time_lte', None) and data.get('time_lt', None))):
+            raise ValidationError('Cannot specify both [gte] and [gt] or [lte] and [lt] for the same key')
 
 
 class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]
