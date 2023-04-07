@@ -1,3 +1,5 @@
+from datetime import datetime
+from decimal import Decimal
 from typing import Type, Any
 
 from marshmallow import Schema
@@ -43,17 +45,23 @@ def fields(spec: dict[str, dict | Any]) -> dict[str, dict]:
 def sanitize_fields(fields: dict[str, list[str]] | dict[str, str],
                     schema: Type[Schema],
                     param: str = 'fields'
-                    ) -> list | dict:
+                    ) -> list:
     formatted_fields = set()
     if param == 'fields':
         for field in fields[param]:
             if field in schema().fields.keys() and field != param:
                 formatted_fields.add(field)
     elif param == 'filter':
-        filters = {}
+        filters: list[tuple[str, Any]] = []
         for field, value in fields.items():
             if field in schema().fields.keys():
-                filters.update({field: value})
+                if not isinstance(field, bool) and isinstance(field, (int, float, Decimal, datetime)):
+                    if value.startswith(('gte:', 'lte:')):
+                        filters.append((field, [value, value[:3]]))
+                    else:
+                        filters.append((field, value))
+                else:
+                    filters.append((field, value))
         return filters  # type: ignore[return-value]
     elif param == 'sort':
         for field in fields[param]:
@@ -76,33 +84,19 @@ def sanitize_query(fields: dict[str, list[str]] | None,
         only = None
     data = obj.select() if isinstance(obj, WriteOnlyCollection) else sa.select(obj)
     if filter:
-        filters: dict[str, str] = sanitize_fields(filter, mapping['filter'], param='filter')  # type: ignore[assignment]
-        mapped_filters: list[tuple] = []
-        for param, value in filters.items():
-            if param.endswith(('_gte', '_lte')):
-                mapped_filters.append((getattr(model, param[:-4]), value, param[-4:]))
-            elif param.endswith(('_gt', '_lt')):
-                mapped_filters.append((getattr(model, param[:-3]), value, param[-3:]))
+        filters: list = sanitize_fields(filter, mapping['filter'], param='filter')
+        print(filters)
+        mapped_filters: list[dict[InstrumentedAttribute, Any]] = []
+        for filter in filters:
+            mapped_filters.append({getattr(model, param): value for param, value in filter.items()})
+        conditions: list[sa.BinaryExpression | sa.ColumnElement] = []
+        for criterion, value in mapped_filters.items():
+            if isinstance(value, str):
+                conditions.append(criterion.ilike(value))
+            elif not isinstance(value, bool) and isinstance(value, (int, float, datetime, Decimal)):
+                print('Hello')
             else:
-                mapped_filters.append((getattr(model, param), value))
-        conditions = []
-        for mapped_filter in mapped_filters:
-            if len(mapped_filter) == 3:
-                criterion, value, operator = mapped_filter
-                if operator == '_gte':
-                    conditions.append(criterion >= value)
-                elif operator == '_lte':
-                    conditions.append(criterion <= value)
-                elif operator == '_gt':
-                    conditions.append(criterion > value)
-                elif operator == '_lt':
-                    conditions.append(criterion < value)
-            else:
-                criterion, value = mapped_filter
-                if isinstance(value, str):
-                    conditions.append(criterion.ilike(value))
-                else:
-                    conditions.append(criterion == value)
+                conditions.append(criterion == value)
         data = data.filter(sa.and_(*conditions))
     if sort:
         criteria = sanitize_fields(sort, mapping['sort'], param='sort')

@@ -255,7 +255,27 @@ class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
                                         """))
     confirmed_on = ma.DateTime(description=("""
                                             Format:
-                                            "2023-03-27 15:00"
+                                            "confirmed_on=2023-03-27 15:00"
+                                            """))
+    confirmed_on_gte = ma.DateTime(data_key='confirmed_on[gte]',
+                                   description=("""
+                                            Format:
+                                            "confirmed_on[gte]=2023-03-27 15:00"
+                                            """))
+    confirmed_on_lte = ma.DateTime(data_key='confirmed_on[lte]',
+                                   description=("""
+                                            Format:
+                                            "confirmed_on[lte]=2023-03-27 15:00"
+                                            """))
+    confirmed_on_gt = ma.DateTime(data_key='confirmed_on[gt]',
+                                  description=("""
+                                            Format:
+                                            "confirmed_on[gt]=2023-03-27 15:00"
+                                            """))
+    confirmed_on_lt = ma.DateTime(data_key='confirmed_on[lt]',
+                                  description=("""
+                                            Format:
+                                            "confirmed_on[lt]=2023-03-27 15:00"
                                             """))
 
 
@@ -328,6 +348,33 @@ class ServiceFieldSchema(ServiceSchema):  # type: ignore[name-defined]
                                                 """))
 
 
+class ServiceFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    duration = ma.Float(description=("""
+                                    Format:
+                                    "duration=2"
+                                    """))
+    duration_gte = ma.Float(data_key='duration[gte]',
+                            description=("""
+                                            Format:
+                                            "duration[gte]=1"
+                                            """))
+    duration_lte = ma.Float(data_key='duration[lte]',
+                            description=("""
+                                            Format:
+                                            "duration[lte]=3"
+                                            """))
+    duration_gt = ma.Float(data_key='duration[gt]',
+                           description=("""
+                                            Format:
+                                            "duration[gt]=1"
+                                            """))
+    duration_lt = ma.Float(data_key='duration[lt]',
+                           description=("""
+                                            Format:
+                                            "duration[lt]=3"
+                                            """))
+
+
 class ServiceSortSchema(ma.Schema):  # type: ignore[name-defined]
     name = ma.String()
     duration = ma.String()
@@ -354,6 +401,33 @@ class PostFieldSchema(PostSchema):  # type: ignore[name-defined]
                                                 """))
 
 
+class PostFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    posted_on = ma.DateTime(description=("""
+                                            Format:
+                                            "posted_on=2023-03-27 15:00"
+                                            """))
+    posted_on_gte = ma.DateTime(data_key='posted_on[gte]',
+                                description=("""
+                                            Format:
+                                            "posted_on[gte]=2023-03-27 15:00"
+                                            """))
+    posted_on_lte = ma.DateTime(data_key='posted_on[lte]',
+                                description=("""
+                                            Format:
+                                            "posted_on[lte]=2023-03-27 15:00"
+                                            """))
+    posted_on_gt = ma.DateTime(data_key='posted_on[gt]',
+                               description=("""
+                                            Format:
+                                            "posted_on[gt]=2023-03-27 15:00"
+                                            """))
+    posted_on_lt = ma.DateTime(data_key='posted_on[lt]',
+                               description=("""
+                                            Format:
+                                            "posted_on[lt]=2023-03-27 15:00"
+                                            """))
+
+
 class PostSortSchema(ma.Schema):  # type: ignore[name-defined]
     title = ma.String()
     posted_on = ma.String()
@@ -378,6 +452,58 @@ class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
                                                 "date",
                                                 "time",
                                                 """))
+
+
+class EntryFilterSchema(ma.Schema):  # type: ignore[name-defined]
+    date = ma.Date(description=("""
+                                        Format:
+                                        "date=2023-03-27"
+                                        """))
+    date_gte = ma.Date(data_key='date[gte]',
+                       description=("""
+                                        Format:
+                                        "date[gte]=2023-03-27"
+                                        """))
+    date_lte = ma.Date(data_key='date[lte]',
+                       description=("""
+                                        Format:
+                                        "date[lte]=2023-03-27"
+                                        """))
+    date_gt = ma.Date(data_key='date[gt]',
+                      description=("""
+                                        Format:
+                                        "date[gt]=2023-03-27"
+                                        """))
+    date_lt = ma.Date(data_key='date[lt]',
+                      description=("""
+                                        Format:
+                                        "date[lt]=2023-03-27"
+                                        """))
+    time = ma.Time(description=("""
+                                    Format:
+                                    "time=15:00"
+                                    """))
+
+    time_gte = ma.Time(data_key='time[gte]',
+                       description=("""
+                                    Format:
+                                    "time[gte]=15:00"
+                                    """))
+    time_lte = ma.Time(data_key='time[lte]',
+                       description=("""
+                                    Format:
+                                    "time[lte]=15:00"
+                                    """))
+    time_gt = ma.Time(data_key='time[gt]',
+                      description=("""
+                                    Format:
+                                    "time[gt]=15:00"
+                                    """))
+    time_lt = ma.Time(data_key='time[lt]',
+                      description=("""
+                                    Format:
+                                    "time[lt]=15:00"
+                                    """))
 
 
 class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]

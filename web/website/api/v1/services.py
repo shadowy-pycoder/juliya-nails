@@ -1,3 +1,5 @@
+from typing import Any
+
 from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint, jsonify, url_for
 from flask.wrappers import Response
@@ -5,8 +7,8 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Service, get_or_404
-from ...schemas import (ServiceSchema, ServiceFieldSchema, ServiceSortSchema, NotFoundSchema,
-                        ForbiddenSchema, PaginationSchema, PaginatedSchema)
+from ...schemas import (ServiceSchema, ServiceFieldSchema, ServiceSortSchema, ServiceFilterSchema,
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required
 
 for_services = Blueprint('for_services', __name__)
@@ -37,22 +39,23 @@ def create_one(kwargs: dict[str, str | float]) -> Response:
 @for_services.route('/services', methods=['GET'])
 @authenticate(token_auth)
 @arguments(ServiceFieldSchema(only=['fields']))
+@arguments(ServiceFilterSchema())
 @arguments(ServiceSortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({200: services_schema})
 def get_all(fields: dict[str, list[str]],
+            filter: dict[str, Any],
             sort: dict[str, list[str]],
             pagination: dict[str, int]) -> Response:
     """Get all services"""
-    mapping = {'fields': ServiceFieldSchema, 'sort': ServiceSortSchema}
+    mapping = {'fields': ServiceFieldSchema, 'filter': ServiceFilterSchema, 'sort': ServiceSortSchema}
     services, only, pagination = sanitize_query(fields=fields,
-                                                filter=None,
+                                                filter=filter,
                                                 sort=sort,
                                                 pagination=pagination,
                                                 obj=Service,
                                                 model=Service,
                                                 mapping=mapping)  # type: ignore[arg-type]
-    print(only)
     return PaginatedSchema(ServiceSchema(many=True, only=only))().dump({'results': services,
                                                                         'pagination': pagination})
 

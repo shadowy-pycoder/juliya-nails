@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses, arguments
@@ -7,8 +8,8 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
-from ...schemas import (PostSchema, PostFieldSchema, PostSortSchema, NotFoundSchema,
-                        ForbiddenSchema, PaginationSchema, PaginatedSchema)
+from ...schemas import (PostSchema, PostFieldSchema, PostSortSchema, PostFilterSchema,
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required, delete_image
 
 for_posts = Blueprint('for_posts', __name__)
@@ -40,16 +41,18 @@ def create_one(kwargs: dict[str, str]) -> Response:
 @for_posts.route('/posts', methods=['GET'])
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
+@arguments(PostFilterSchema())
 @arguments(PostSortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({200: posts_schema})
 def get_all(fields: dict[str, list[str]],
+            filter: dict[str, Any],
             sort: dict[str, list[str]],
             pagination: dict[str, int]) -> Response:
     """Get all posts"""
-    mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
+    mapping = {'fields': PostFieldSchema, 'filter': PostFilterSchema, 'sort': PostSortSchema}
     posts, only, pagination = sanitize_query(fields=fields,
-                                             filter=None,
+                                             filter=filter,
                                              sort=sort,
                                              pagination=pagination,
                                              obj=Post,
@@ -105,6 +108,7 @@ def delete_one(post_id: int) -> tuple[str, int]:
 @for_posts.route('/users/<uuid:user_id>/posts', methods=['GET'])
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
+@arguments(PostFilterSchema())
 @arguments(PostSortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({
@@ -112,14 +116,15 @@ def delete_one(post_id: int) -> tuple[str, int]:
     404: (NotFoundSchema, 'User not found')
 })
 def get_user_posts(fields: dict[str, list[str]],
+                   filter: dict[str, Any],
                    sort: dict[str, list[str]],
                    pagination: dict[str, int],
                    user_id: UUID) -> Response:
     """Retrieve user's posts"""
     user = get_or_404(User, user_id)
-    mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
+    mapping = {'fields': PostFieldSchema, 'filter': PostFilterSchema, 'sort': PostSortSchema}
     posts, only, pagination = sanitize_query(fields=fields,
-                                             filter=None,
+                                             filter=filter,
                                              sort=sort,
                                              pagination=pagination,
                                              obj=user.posts,
@@ -132,17 +137,19 @@ def get_user_posts(fields: dict[str, list[str]],
 @for_posts.route('/me/posts', methods=['GET'])
 @authenticate(token_auth)
 @arguments(PostFieldSchema(only=['fields']))
+@arguments(PostFilterSchema())
 @arguments(PostSortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({200: posts_schema})
 def my_posts(fields: dict[str, list[str]],
+             filter: dict[str, Any],
              sort: dict[str, list[str]],
              pagination: dict[str, int]) -> Response:
     """Retrieve my posts"""
     user: User = token_auth.current_user()
-    mapping = {'fields': PostFieldSchema, 'sort': PostSortSchema}
+    mapping = {'fields': PostFieldSchema, 'filter': PostFilterSchema, 'sort': PostSortSchema}
     posts, only, pagination = sanitize_query(fields=fields,
-                                             filter=None,
+                                             filter=filter,
                                              sort=sort,
                                              pagination=pagination,
                                              obj=user.posts,

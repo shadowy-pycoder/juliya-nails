@@ -1,3 +1,4 @@
+from typing import Any
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses, arguments
@@ -7,7 +8,7 @@ from flask.wrappers import Response
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
-from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema,
+from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema, EntryFilterSchema,
                         NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
 from ...utils import admin_required
 
@@ -44,8 +45,8 @@ def create_one(kwargs: dict) -> Response:
 
 @for_entries.route('/entries', methods=['GET'])
 @authenticate(token_auth)
-@admin_required
 @arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntryFilterSchema())
 @arguments(EntrySortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({
@@ -53,12 +54,13 @@ def create_one(kwargs: dict) -> Response:
     403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_all(fields: dict[str, list[str]],
+            filter: dict[str, Any],
             sort: dict[str, list[str]],
             pagination: dict[str, int]) -> Response:
     """Get all entries"""
-    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    mapping = {'fields': EntryFieldSchema, 'filter': EntryFilterSchema, 'sort': EntrySortSchema}
     entries, only, pagination = sanitize_query(fields=fields,
-                                               filter=None,
+                                               filter=filter,
                                                sort=sort,
                                                pagination=pagination,
                                                obj=Entry,
@@ -133,8 +135,8 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
 
 @for_entries.route('/users/<uuid:user_id>/entries', methods=['GET'])
 @authenticate(token_auth)
-@admin_required
 @arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntryFilterSchema())
 @arguments(EntrySortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({
@@ -143,14 +145,15 @@ def delete_one(entry_id: UUID) -> tuple[str, int]:
     403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_user_entries(fields: dict[str, list[str]],
+                     filter: dict[str, Any],
                      sort: dict[str, list[str]],
                      pagination: dict[str, int],
                      user_id: UUID) -> Response:
     """Retrieve user's entries"""
     user = get_or_404(User, user_id)
-    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    mapping = {'fields': EntryFieldSchema, 'filter': EntryFilterSchema, 'sort': EntrySortSchema}
     entries, only, pagination = sanitize_query(fields=fields,
-                                               filter=None,
+                                               filter=filter,
                                                sort=sort,
                                                pagination=pagination,
                                                obj=user.entries,
@@ -162,8 +165,8 @@ def get_user_entries(fields: dict[str, list[str]],
 
 @for_entries.route('/services/<int:service_id>/entries', methods=['GET'])
 @authenticate(token_auth)
-@admin_required
 @arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntryFilterSchema())
 @arguments(EntrySortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({
@@ -172,14 +175,15 @@ def get_user_entries(fields: dict[str, list[str]],
     403: (ForbiddenSchema, 'You are not allowed to perform this operation')
 })
 def get_service_entries(fields: dict[str, list[str]],
+                        filter: dict[str, Any],
                         sort: dict[str, list[str]],
                         pagination: dict[str, int],
                         service_id: int) -> Response:
     """Retrieve service's entries"""
     service = get_or_404(Service, service_id)
-    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    mapping = {'fields': EntryFieldSchema, 'filter': EntryFilterSchema, 'sort': EntrySortSchema}
     entries, only, pagination = sanitize_query(fields=fields,
-                                               filter=None,
+                                               filter=filter,
                                                sort=sort,
                                                pagination=pagination,
                                                obj=service.entries,
@@ -192,17 +196,19 @@ def get_service_entries(fields: dict[str, list[str]],
 @for_entries.route('/me/entries', methods=['GET'])
 @authenticate(token_auth)
 @arguments(EntryFieldSchema(only=['fields']))
+@arguments(EntryFilterSchema())
 @arguments(EntrySortSchema(only=['sort']))
 @arguments(PaginationSchema())
 @other_responses({200: entries_schema})
 def my_entries(fields: dict[str, list[str]],
+               filter: dict[str, Any],
                sort: dict[str, list[str]],
                pagination: dict[str, int]) -> Response:
     """Retrieve my entries"""
     user: User = token_auth.current_user()
-    mapping = {'fields': EntryFieldSchema, 'sort': EntrySortSchema}
+    mapping = {'fields': EntryFieldSchema, 'filter': EntryFilterSchema, 'sort': EntrySortSchema}
     entries, only, pagination = sanitize_query(fields=fields,
-                                               filter=None,
+                                               filter=filter,
                                                sort=sort,
                                                pagination=pagination,
                                                obj=user.entries,
