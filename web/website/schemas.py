@@ -78,6 +78,7 @@ class AdminUserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     registered_on = ma.auto_field()
     confirmed = ma.auto_field()
     confirmed_on = ma.auto_field()
+    admin = ma.auto_field(load_only=True, load_default=False)
     posts = ma.URLFor('api.for_posts.get_user_posts', values={'user_id': '<uuid>'}, dump_only=True)
     entries = ma.URLFor('api.for_entries.get_user_entries', values={'user_id': '<uuid>'}, dump_only=True)
     socials = ma.URLFor('api.for_socials.get_user_socials', values={'user_id': '<uuid>'}, dump_only=True)
@@ -101,13 +102,20 @@ class AdminUserSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
 
 
 class UpdateUserSchema(UserSchema):
-    username = ma.auto_field(load_only=True)
+    username = ma.String(dump_only=True)
     old_password = ma.String(load_only=True, validate=validate.Length(min=3))
 
     @validates('old_password')
     def validate_old_password(self, value: str) -> None:
         if not token_auth.current_user().verify_password(value):
             raise ValidationError('Password is incorrect')
+
+    @validates_schema
+    def validate_schema(self, data: dict, **kwargs: dict) -> None:
+        if data.get('password', None) and not data.get('old_password', None):
+            raise ValidationError('You must include old password to create new one')
+        elif not data.get('password', None) and data.get('old_password', None):
+            raise ValidationError('You must specify password to create or remove old password from request')
 
 
 class UserInfoSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]

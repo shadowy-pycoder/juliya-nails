@@ -126,10 +126,6 @@ def me() -> Response:
 def update_me(kwargs: dict[str, str]) -> Response:
     """Update the authenticated user"""
     user: User = token_auth.current_user()
-    if 'password' in kwargs and 'old_password' not in kwargs:
-        abort(400, 'You must insert old password to create new one')
-    elif 'old_password' in kwargs:
-        abort(400, 'You must specify password to create or omit old password')
     user.update(kwargs)
     db.session.commit()
     return user
