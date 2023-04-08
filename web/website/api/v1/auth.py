@@ -1,4 +1,5 @@
 from apifairy import authenticate, response
+from flask import current_app
 import sqlalchemy as sa
 
 from . import api
@@ -33,6 +34,9 @@ def get_auth_token() -> dict:
 
 @token_auth.verify_token
 def verify_token(token: str | bytes) -> User | None:
+    if current_app.config['DISABLE_AUTH']:
+        user = db.session.scalar(sa.select(User))
+        return user
     user = None
     if token:
         user = User.verify_token(token, context='auth', salt_context='auth-token')

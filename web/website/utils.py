@@ -61,6 +61,8 @@ def email_confirmed(func: Callable[P, R]) -> Callable[P, R | Response]:
 def admin_required(func: Callable[P, R]) -> Callable[P, R | Response]:
     @wraps(func)
     def decorated_function(*args: P.args, **kwargs: P.kwargs) -> R | Response:
+        if current_app.config['DISABLE_AUTH']:
+            return func(*args, **kwargs)
         user = token_auth.current_user()
         if user and user.admin or current_user.admin:
             return func(*args, **kwargs)

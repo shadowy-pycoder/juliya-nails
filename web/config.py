@@ -24,17 +24,27 @@ class Config:
     APIFAIRY_VERSION = '1.0'
     APIFAIRY_UI = 'elements'
     APIFAIRY_UI_PATH = '/api/docs'
+    DEBUG = False
+    TESTING = False
+    DISABLE_AUTH = False
 
 
 class DevelopmentConfig(Config):
     DEBUG = True
 
 
+class TestingConfig(Config):
+    SQLALCHEMY_DATABASE_URI = os.environ['TESTING_DATABASE_URI']
+    DEBUG = True
+    TESTING = True
+    DISABLE_AUTH = True
+
+
 def populate(cls: str = 'Config') -> dict:
     res = {}
     for k, v in dict(globals()).items():
         if k.endswith(cls) and k != cls:
-            res[k.rstrip(cls).lower()] = v
+            res[k[:-len(cls)].lower()] = v
     return res
 
 

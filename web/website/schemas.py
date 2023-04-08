@@ -230,9 +230,9 @@ class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]
     posts = ma.String()
     entries = ma.String()
     socials = ma.String()
-    fields = fields.DelimitedList(ma.String(),
-                                  description=("""
-                                                List of fields to include in response
+    fields = fields.DelimitedList(ma.String(), metadata={
+                                  'description': """
+                                                List of fields to include in request
                                                 Possible values:
                                                 "uuid",
                                                 "url",
@@ -243,43 +243,44 @@ class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]
                                                 "posts",
                                                 "entries",
                                                 "socials"
-                                                """))
+                                                """})
 
 
 class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    username = ma.String(description=("""
+    username = ma.String(metadata={'description': """
                                         Find user by username
-                                        """))
+                                        """})
     confirmed = ma.Boolean(validate=validate.OneOf([True, False]),
-                           description=("""
-                                        Possible values:
-                                        "true",
-                                        "false",
-                                        """))
-    confirmed_on = ma.DateTime(description=("""
+                           metadata={
+        'description': """
+                        Possible values:
+                        "true",
+                        "false",
+                        """})
+    confirmed_on = ma.DateTime(metadata={'description': """
                                             Format:
                                             "confirmed_on=2023-03-27 15:00"
-                                            """))
+                                            """})
     confirmed_on_gte = ma.DateTime(data_key='confirmed_on[gte]',
-                                   description=("""
+                                   metadata={'description': """
                                             Format:
                                             "confirmed_on[gte]=2023-03-27 15:00"
-                                            """))
+                                            """})
     confirmed_on_lte = ma.DateTime(data_key='confirmed_on[lte]',
-                                   description=("""
+                                   metadata={'description': """
                                             Format:
                                             "confirmed_on[lte]=2023-03-27 15:00"
-                                            """))
+                                            """})
     confirmed_on_gt = ma.DateTime(data_key='confirmed_on[gt]',
-                                  description=("""
+                                  metadata={'description': """
                                             Format:
                                             "confirmed_on[gt]=2023-03-27 15:00"
-                                            """))
+                                            """})
     confirmed_on_lt = ma.DateTime(data_key='confirmed_on[lt]',
-                                  description=("""
+                                  metadata={'description': """
                                             Format:
                                             "confirmed_on[lt]=2023-03-27 15:00"
-                                            """))
+                                            """})
 
     @validates_schema
     def validate_schema(self, data: dict, **kwargs: dict) -> None:
@@ -294,17 +295,17 @@ class UserSortSchema(ma.Schema):  # type: ignore[name-defined]
     confirmed_on = ma.DateTime()
     sort = fields.DelimitedList(ma.String(),
                                 load_default=['registered_on'],
-                                description=("""
+                                metadata={'description': """
                                                 Possible values:
                                                 "username",
                                                 "registered_on",
                                                 "confirmed_on",
-                                                """))
+                                                """})
 
 
 class SocialsFieldSchema(SocialMediaSchema):  # type: ignore[name-defined]
     fields = fields.DelimitedList(ma.String(),
-                                  description=("""
+                                  metadata={'description': """
                                                 Possible values:
                                                 "uuid",
                                                 "url",
@@ -321,16 +322,16 @@ class SocialsFieldSchema(SocialMediaSchema):  # type: ignore[name-defined]
                                                 "website",
                                                 "vk",
                                                 "about"
-                                                """))
+                                                """})
 
 
 class SocialsFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    first_name = ma.String(description=("""
+    first_name = ma.String(metadata={'description': """
                                         Filter by specified first name
-                                        """))
-    last_name = ma.String(description=("""
+                                        """})
+    last_name = ma.String(metadata={'description': """
                                         Filter by specified last name
-                                        """))
+                                        """})
 
 
 class SocialsSortSchema(ma.Schema):  # type: ignore[name-defined]
@@ -338,50 +339,50 @@ class SocialsSortSchema(ma.Schema):  # type: ignore[name-defined]
     last_name = ma.String()
     sort = fields.DelimitedList(ma.String(),
                                 load_default=['first_name'],
-                                description=("""
+                                metadata={'description': """
                                                 Possible values:
                                                 "first_name",
                                                 "last_name",
-                                                """))
+                                                """})
 
 
 class ServiceFieldSchema(ServiceSchema):  # type: ignore[name-defined]
     fields = fields.DelimitedList(ma.String(),
-                                  description=("""
+                                  metadata={'description': """
                                                 Possible values:
                                                 "id",
                                                 "url",
                                                 "name",
                                                 "duration",
                                                 "entries",
-                                                """))
+                                                """})
 
 
 class ServiceFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    duration = ma.Decimal(description=("""
+    duration = ma.Decimal(metadata={'description': """
                                     Format:
                                     "duration=2"
-                                    """))
+                                    """})
     duration_gte = ma.Decimal(data_key='duration[gte]',
-                              description=("""
+                              metadata={'description': """
                                             Format:
                                             "duration[gte]=1"
-                                            """))
+                                            """})
     duration_lte = ma.Decimal(data_key='duration[lte]',
-                              description=("""
+                              metadata={'description': """
                                             Format:
                                             "duration[lte]=3"
-                                            """))
+                                            """})
     duration_gt = ma.Decimal(data_key='duration[gt]',
-                             description=("""
+                             metadata={'description': """
                                             Format:
                                             "duration[gt]=1"
-                                            """))
+                                            """})
     duration_lt = ma.Decimal(data_key='duration[lt]',
-                             description=("""
+                             metadata={'description': """
                                             Format:
                                             "duration[lt]=3"
-                                            """))
+                                            """})
 
     @validates_schema
     def validate_schema(self, data: dict, **kwargs: dict) -> None:
@@ -395,16 +396,16 @@ class ServiceSortSchema(ma.Schema):  # type: ignore[name-defined]
     duration = ma.String()
     sort = fields.DelimitedList(ma.String(),
                                 load_default=['name'],
-                                description=("""
+                                metadata={'description': """
                                                 Possible values:
                                                 "name",
                                                 "duration"
-                                                """))
+                                                """})
 
 
 class PostFieldSchema(PostSchema):  # type: ignore[name-defined]
     fields = fields.DelimitedList(ma.String(),
-                                  description=("""
+                                  metadata={'description': """
                                                 Possible values:
                                                 "id",
                                                 "url",
@@ -413,34 +414,34 @@ class PostFieldSchema(PostSchema):  # type: ignore[name-defined]
                                                 "image",
                                                 "posted_on",
                                                 "author,
-                                                """))
+                                                """})
 
 
 class PostFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    posted_on = ma.DateTime(description=("""
+    posted_on = ma.DateTime(metadata={'description': """
                                             Format:
                                             "posted_on=2023-03-27 15:00"
-                                            """))
+                                            """})
     posted_on_gte = ma.DateTime(data_key='posted_on[gte]',
-                                description=("""
+                                metadata={'description': """
                                             Format:
                                             "posted_on[gte]=2023-03-27 15:00"
-                                            """))
+                                            """})
     posted_on_lte = ma.DateTime(data_key='posted_on[lte]',
-                                description=("""
+                                metadata={'description': """
                                             Format:
                                             "posted_on[lte]=2023-03-27 15:00"
-                                            """))
+                                            """})
     posted_on_gt = ma.DateTime(data_key='posted_on[gt]',
-                               description=("""
+                               metadata={'description': """
                                             Format:
                                             "posted_on[gt]=2023-03-27 15:00"
-                                            """))
+                                            """})
     posted_on_lt = ma.DateTime(data_key='posted_on[lt]',
-                               description=("""
+                               metadata={'description': """
                                             Format:
                                             "posted_on[lt]=2023-03-27 15:00"
-                                            """))
+                                            """})
 
     @validates_schema
     def validate_schema(self, data: dict, **kwargs: dict) -> None:
@@ -454,16 +455,16 @@ class PostSortSchema(ma.Schema):  # type: ignore[name-defined]
     posted_on = ma.String()
     sort = fields.DelimitedList(ma.String(),
                                 load_default=['-posted_on'],
-                                description=("""
+                                metadata={'description': """
                                                 Possible values:
                                                 "title",
                                                 "posted_on"
-                                                """))
+                                                """})
 
 
 class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
     fields = fields.DelimitedList(ma.String(),
-                                  description=("""
+                                  metadata={'description': """
                                                 Possible values:
                                                 "uuid",
                                                 "url",
@@ -475,59 +476,59 @@ class EntryFieldSchema(EntrySchema):  # type: ignore[name-defined]
                                                 "duration",
                                                 "timestamp",
                                                 "ending_time"
-                                                """))
+                                                """})
 
 
 class EntryFilterSchema(ma.Schema):  # type: ignore[name-defined]
-    date = ma.Date(description=("""
+    date = ma.Date(metadata={'description': """
                                         Format:
                                         "date=2023-03-27"
-                                        """))
+                                        """})
     date_gte = ma.Date(data_key='date[gte]',
-                       description=("""
+                       metadata={'description': """
                                         Format:
                                         "date[gte]=2023-03-27"
-                                        """))
+                                        """})
     date_lte = ma.Date(data_key='date[lte]',
-                       description=("""
+                       metadata={'description': """
                                         Format:
                                         "date[lte]=2023-03-27"
-                                        """))
+                                        """})
     date_gt = ma.Date(data_key='date[gt]',
-                      description=("""
+                      metadata={'description': """
                                         Format:
                                         "date[gt]=2023-03-27"
-                                        """))
+                                        """})
     date_lt = ma.Date(data_key='date[lt]',
-                      description=("""
+                      metadata={'description': """
                                         Format:
                                         "date[lt]=2023-03-27"
-                                        """))
-    time = ma.Time(description=("""
+                                        """})
+    time = ma.Time(metadata={'description': """
                                     Format:
                                     "time=15:00"
-                                    """))
+                                    """})
 
     time_gte = ma.Time(data_key='time[gte]',
-                       description=("""
+                       metadata={'description': """
                                     Format:
                                     "time[gte]=15:00"
-                                    """))
+                                    """})
     time_lte = ma.Time(data_key='time[lte]',
-                       description=("""
+                       metadata={'description': """
                                     Format:
                                     "time[lte]=15:00"
-                                    """))
+                                    """})
     time_gt = ma.Time(data_key='time[gt]',
-                      description=("""
+                      metadata={'description': """
                                     Format:
                                     "time[gt]=15:00"
-                                    """))
+                                    """})
     time_lt = ma.Time(data_key='time[lt]',
-                      description=("""
+                      metadata={'description': """
                                     Format:
                                     "time[lt]=15:00"
-                                    """))
+                                    """})
 
     @validates_schema
     def validate_schema(self, data: dict, **kwargs: dict) -> None:
@@ -544,12 +545,12 @@ class EntrySortSchema(ma.Schema):  # type: ignore[name-defined]
     time = ma.String()
     sort = fields.DelimitedList(ma.String(),
                                 load_default=['-date'],
-                                description=("""
+                                metadata={'description': """
                                                 Possible values:
                                                 "created_on",
                                                 "date",
                                                 "time"
-                                                """))
+                                                """})
 
 
 class PaginationSchema(ma.Schema):  # type: ignore[name-defined]
