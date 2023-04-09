@@ -191,6 +191,12 @@ class ServiceSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
         if round(value, 2) <= 0:
             raise ValidationError('Duration must be greater than or equal to 0.1')
 
+    @validates('name')
+    def validate_name(self, value: str) -> None:
+        service = db.session.scalar(sa.select(Service).filter(Service.name.ilike(value)))
+        if service:
+            raise ValidationError('Such name already exists')
+
 
 class TokenSchema(ma.Schema):  # type: ignore[name-defined]
     token = ma.String()

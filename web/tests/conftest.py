@@ -17,8 +17,8 @@ def app() -> Generator:
     app_context = app.app_context()
     app_context.push()
     db.Model.metadata.create_all(db.engine)
-    user = User(uuid=TESTING_USER,
-                username='test', email='test@example.com', password='foo#Bar#')
+    user = User(uuid=TESTING_USER, admin=True,
+                username='test', email='test@example.com', password='foo1#Bar#')
     db.session.add(user)
     db.session.commit()
     socials = SocialMedia(user_id=user.uuid)

@@ -3,19 +3,15 @@ import secrets
 from flask.testing import FlaskClient
 from werkzeug.test import TestResponse
 
-from website import db
-from website.models import User
 
 TESTING_USER = '594d00de-82b0-4ac0-8beb-9b2a9e7c919e'
 
 
 def test_all_users(client: FlaskClient) -> None:
-    populate_users(2)
-    db.session.commit()
     response = client.get('/api/v1/users')
     assert response.status_code == 200
     get_response = response.get_json()
-    assert get_response['pagination']['total'] == 3
+    assert get_response['results'][0]['username'] == 'test'
 
 
 def test_create_user(client: FlaskClient) -> None:
@@ -85,6 +81,46 @@ def test_update_me(client: FlaskClient) -> None:
     assert response.status_code == 400
 
 
+def test_update_admin(client: FlaskClient) -> None:
+    payload = {
+        'admin': True,
+        'registered_on': '2023-04-24 14:15',
+        'confirmed_on': '2023-04-24 14:15',
+        'confirmed': True,
+        'email': 'upduser@example.com',
+        'username': 'test2',
+        'password': 'foo#barR1'
+    }
+    response = client.put(f'/api/v1/users/{TESTING_USER}', json=payload)
+    assert response.status_code == 200
+    assert response.get_json()['username'] == payload['username']
+    assert response.get_json()['email'] == payload['email']
+
+    invalid_payload = {
+        'email': 'upduser@example.com',
+        'username': 'test2test2test2test2test2',
+    }
+    response = client.put(f'/api/v1/users/{TESTING_USER}', json=invalid_payload)
+    assert response.status_code == 400
+
+
+def test_delete_user(client: FlaskClient) -> None:
+    payload = {
+        'username': 'delete',
+        'email': 'delete@delete.com',
+        'password': 'dElet1e@'
+    }
+    user_response, _ = create_user(client, payload)
+    uuid = user_response.get_json()['uuid']
+    response = client.delete(f'/api/v1/users/{uuid}')
+    assert response.status_code == 204
+    assert response.get_json() is None
+    response = client.get(f'/api/v1/users/{uuid}')
+    assert response.status_code == 404
+    response = client.delete(f'/api/v1/users/{TESTING_USER}')
+    assert response.status_code == 403
+
+
 def create_user_payload() -> dict:
     user = secrets.token_hex(4)
     payload = {
@@ -102,14 +138,3 @@ def create_user(
         payload = create_user_payload()
     response = client.post('/api/v1/users', json=payload)
     return response, payload
-
-
-def populate_user(payload: dict | None = None) -> None:
-    if payload is None:
-        payload = create_user_payload()
-    db.session.add(User(**payload))
-
-
-def populate_users(num: int) -> None:
-    for _ in range(num):
-        populate_user()
