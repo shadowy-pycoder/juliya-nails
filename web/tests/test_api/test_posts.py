@@ -9,69 +9,74 @@ from website import db
 from website.models import Post
 
 
-def test_all_posts(client: FlaskClient) -> None:
+def test_all_posts(client: FlaskClient, token: str) -> None:
     payload = {
         'title': 'test',
         'content': 'test'
     }
-    create_post(client, payload)
-    response = client.get('/api/v1/posts')
+    create_post(client, token, payload)
+    response = client.get('/api/v1/posts', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
 
 
-def test_get_post(client: FlaskClient) -> None:
+def test_get_post(client: FlaskClient, token: str) -> None:
     post = db.session.scalar(sa.select(Post).filter_by(title='test'))
     assert post is not None
-    response = client.get(f'/api/v1/posts/{post.id}')
+    response = client.get(f'/api/v1/posts/{post.id}', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
     assert response.get_json()['title'] == 'test'
     assert response.get_json()['content'] == 'test'
 
 
-def test_get_user_posts(client: FlaskClient) -> None:
-    response = client.get(f'api/v1/users/{TESTING_USER}/posts')
+def test_get_user_posts(client: FlaskClient, token: str) -> None:
+    response = client.get(f'api/v1/users/{TESTING_USER}/posts',
+                          headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
 
 
-def test_create_post(client: FlaskClient) -> None:
-    response, _ = create_post(client)
+def test_create_post(client: FlaskClient, token: str) -> None:
+    response, _ = create_post(client, token)
     assert response.status_code == 201
+    post_id = response.get_json()['id']
+    assert f'/api/v1/posts/{post_id}' in response.headers['Location']
     invalid_payload = {
         'content': 'string'
     }
-    response, _ = create_post(client, invalid_payload)
+    response, _ = create_post(client, token, invalid_payload)
     assert response.status_code == 400
 
 
-def test_update_post(client: FlaskClient) -> None:
+def test_update_post(client: FlaskClient, token: str) -> None:
     payload = {
         'title': 'title',
         'content': 'content',
     }
     post = db.session.scalar(sa.select(Post).filter_by(title='test'))
     assert post is not None
-    response = client.put(f'/api/v1/posts/{post.id}', json=payload)
+    response = client.put(f'/api/v1/posts/{post.id}', json=payload,
+                          headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 200
     assert response.get_json()['title'] == 'title'
 
 
-def test_delete_post(client: FlaskClient) -> None:
-    resp, _ = create_post(client)
+def test_delete_post(client: FlaskClient, token: str) -> None:
+    resp, _ = create_post(client, token)
     post = db.session.scalar(sa.select(Post).filter_by(title=resp.get_json()['title']))
     assert post is not None
-    response = client.delete(f'/api/v1/posts/{post.id}')
+    response = client.delete(f'/api/v1/posts/{post.id}', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 204
     assert response.get_json() is None
-    response = client.get(f'/api/v1/services/{post.id}')
+    response = client.get(f'/api/v1/services/{post.id}', headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 404
 
 
 def create_post(
         client: FlaskClient,
+        token: str,
         payload: dict | None = None) -> tuple[TestResponse, dict]:
     if payload is None:
         payload = create_post_payload()
-    response = client.post('/api/v1/posts', json=payload)
+    response = client.post('/api/v1/posts', json=payload, headers={'Authorization': f'Bearer {token}'})
     return response, payload
 
 

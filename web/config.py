@@ -26,7 +26,6 @@ class Config:
     APIFAIRY_UI_PATH = '/api/docs'
     DEBUG = False
     TESTING = False
-    DISABLE_AUTH = False
 
 
 class DevelopmentConfig(Config):
@@ -35,9 +34,7 @@ class DevelopmentConfig(Config):
 
 class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ['TESTING_DATABASE_URI']
-    DEBUG = True
     TESTING = True
-    DISABLE_AUTH = True
 
 
 def populate(cls: str = 'Config') -> dict:

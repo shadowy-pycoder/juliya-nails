@@ -5,12 +5,12 @@ from apifairy import authenticate, body, response, other_responses, arguments
 from flask import Blueprint, abort, jsonify, url_for
 from flask.wrappers import Response
 
-from .errors import validation_error
 from ..common import sanitize_query, can_create_entry
-from ... import db, token_auth, apifairy
+from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
 from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema, EntryFilterSchema,
                         NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
+from ...utils import admin_required
 
 for_entries = Blueprint('for_entries', __name__)
 
@@ -40,7 +40,7 @@ def create_one(kwargs: dict) -> Response:
         link = url_for('api.for_entries.get_all', date=entry.date.strftime("%Y-%m-%d"))
         message = f'Please choose different date or time. See all entries for this date: {link}'
         messages = {'json': {'datetime': [message]}}
-        return validation_error(400, messages)
+        abort(400, messages)
     db.session.add(entry)
     db.session.commit()
     response = jsonify(entry_schema.dump(entry))
@@ -117,6 +117,12 @@ def update_one(kwargs: dict, entry_id: UUID) -> Response:
         entry.date = kwargs['date']
     if 'time' in kwargs:
         entry.time = kwargs['time']
+    available = can_create_entry(entry, context='update')
+    if not available:
+        link = url_for('api.for_entries.get_all', date=entry.date.strftime("%Y-%m-%d"))
+        message = f'Please choose different date or time. See all entries for this date: {link}'
+        messages = {'json': {'datetime': [message]}}
+        abort(400, messages)
     db.session.add(entry)
     db.session.commit()
     return entry

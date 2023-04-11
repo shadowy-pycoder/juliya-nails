@@ -295,11 +295,37 @@ class UserFilterSchema(ma.Schema):  # type: ignore[name-defined]
                                             Format:
                                             "confirmed_on[lt]=2023-03-27 15:00"
                                             """})
+    registered_on = ma.DateTime(metadata={'description': """
+                                            Format:
+                                            "registered_on=2023-03-27 15:00"
+                                            """})
+    registered_on_gte = ma.DateTime(data_key='registered_on[gte]',
+                                    metadata={'description': """
+                                            Format:
+                                            "registered_on[gte]=2023-03-27 15:00"
+                                            """})
+    registered_on_lte = ma.DateTime(data_key='registered_on[lte]',
+                                    metadata={'description': """
+                                            Format:
+                                            "registered_on[lte]=2023-03-27 15:00"
+                                            """})
+    registered_on_gt = ma.DateTime(data_key='registered_on[gt]',
+                                   metadata={'description': """
+                                            Format:
+                                            "registered_on[gt]=2023-03-27 15:00"
+                                            """})
+    registered_on_lt = ma.DateTime(data_key='registered_on[lt]',
+                                   metadata={'description': """
+                                            Format:
+                                            "registered_on[lt]=2023-03-27 15:00"
+                                            """})
 
     @validates_schema
     def validate_schema(self, data: dict, **kwargs: dict) -> None:
         if ((data.get('confirmed_on_gte', None) and data.get('confirmed_on_gt', None)) or
-                (data.get('confirmed_on_lte', None) and data.get('confirmed_on_lt', None))):
+                (data.get('confirmed_on_lte', None) and data.get('confirmed_on_lt', None)) or
+                (data.get('registered_on_gte', None) and data.get('registered_on_gt', None)) or
+                (data.get('registered_on_lte', None) and data.get('registered_on_lt', None))):
             raise ValidationError('Cannot specify both [gte] and [gt] or [lte] and [lt] for the same key')
 
 

@@ -4,7 +4,7 @@ from typing import Union, TypeVar, Type, Literal
 import uuid
 from uuid import UUID as UUID_
 
-from flask import abort, current_app, url_for
+from flask import abort, current_app
 from flask_admin.contrib.sqla import ModelView
 from flask_admin.form import SecureForm, BaseForm
 from flask_login import UserMixin, current_user, AnonymousUserMixin
@@ -68,7 +68,7 @@ class User(UserMixin, UpdateMixin, db.Model):  # type: ignore[name-defined]
         back_populates='user', cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
-        return f"User('{self.username}', '{self.email}')"
+        return self.username
 
     @property
     def password(self) -> None:
