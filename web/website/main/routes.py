@@ -41,7 +41,7 @@ def handle_error(error: HTTPException) -> Response | tuple[str, int]:
 def create_post() -> Response | str:
     form = PostForm()
     if form.validate_on_submit():
-        image = save_image(form.image) if form.image.data else None
+        image = save_image(form.image.data) if form.image.data else None
         post = Post(title=form.title.data, image=image, content=form.content.data, author=current_user)
         db.session.add(post)
         db.session.commit()
@@ -60,7 +60,7 @@ def edit_post(post_id: int) -> Response | str:
             image = None
             delete_image(post.image)
         elif form.image.data:
-            image = save_image(form.image)
+            image = save_image(form.image.data)
             delete_image(post.image)
         else:
             image = post.image

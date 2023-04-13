@@ -1,8 +1,10 @@
 from datetime import datetime, timedelta
+import os
 import random
 from typing import Generator
 
-from flask import Flask
+from apifairy.fields import FileStorage
+from flask import Flask, current_app
 from flask.testing import FlaskClient
 import pytest
 
@@ -59,3 +61,18 @@ def token(client: FlaskClient) -> str:
     response = client.post('/api/v1/get-auth-token', auth=('test', 'foo1#Bar#'))
     token = response.get_json()['token']
     return token
+
+
+@pytest.fixture(scope='session')
+def image_file() -> Generator[FileStorage, None, None]:
+    file_path = os.path.join(
+        current_app.root_path,
+        current_app.config['UPLOAD_FOLDER'], 'profiles',
+        current_app.config['DEFAULT_AVATAR'])
+    file = FileStorage(stream=open(file_path, 'rb'),
+                       filename=current_app.config['DEFAULT_AVATAR'],
+                       content_type='image/jpeg')
+    try:
+        yield file
+    finally:
+        file.close()

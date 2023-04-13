@@ -2,19 +2,20 @@ from typing import Any
 from uuid import UUID
 
 from apifairy import authenticate, body, response, other_responses, arguments
-from flask import Blueprint
+from flask import Blueprint, current_app
 from flask.wrappers import Response
 
 from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import SocialMedia, User, get_or_404
 from ...schemas import (SocialMediaSchema, SocialsFieldSchema, SocialsFilterSchema, SocialsSortSchema,
-                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
-from ...utils import admin_required
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema, UserAvatarSchema)
+from ...utils import admin_required, delete_image
 
 for_socials = Blueprint('for_socials', __name__)
 
 social_schema = SocialMediaSchema()
+avatar_schema = UserAvatarSchema()
 socials_schema = PaginatedSchema(SocialMediaSchema(many=True))
 
 
@@ -109,6 +110,39 @@ def update_user_socials(kwargs: dict, user_id: UUID) -> Response:
     return user.socials
 
 
+@for_socials.route('/users/<uuid:user_id>/socials/avatar', methods=['PUT'])
+@authenticate(token_auth)
+@admin_required
+@body(avatar_schema, location='form')
+@response(social_schema)
+@other_responses({
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
+})
+def update_user_avatar(kwargs: dict, user_id: UUID) -> Response:
+    """Update user's avatar"""
+    user = get_or_404(User, user_id)
+    user.socials.avatar = kwargs['avatar']
+    db.session.commit()
+    return user.socials
+
+
+@for_socials.route('/users/<uuid:user_id>/socials/avatar', methods=['DELETE'])
+@authenticate(token_auth)
+@admin_required
+@other_responses({
+    404: (NotFoundSchema, 'Not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
+})
+def delete_user_avatar(user_id: UUID) -> tuple[str, int]:
+    """Delete user's avatar"""
+    user = get_or_404(User, user_id)
+    delete_image(user.socials.avatar, path='profiles')
+    user.socials.avatar = current_app.config['DEFAULT_AVATAR']
+    db.session.commit()
+    return '', 204
+
+
 @for_socials.route('/me/socials', methods=['GET'])
 @authenticate(token_auth)
 @response(social_schema)
@@ -128,3 +162,26 @@ def update_my_socials(kwargs: dict) -> Response:
     user.socials.update(kwargs)
     db.session.commit()
     return user.socials  # type: ignore[return-value]
+
+
+@for_socials.route('/me/socials/avatar', methods=['PUT'])
+@authenticate(token_auth)
+@body(avatar_schema, location='form')
+@response(social_schema)
+def update_my_avatar(kwargs: dict) -> Response:
+    """Update my avatar"""
+    user: User = token_auth.current_user()
+    user.socials.avatar = kwargs['avatar']
+    db.session.commit()
+    return user.socials  # type: ignore[return-value]
+
+
+@for_socials.route('/me/socials/avatar', methods=['DELETE'])
+@authenticate(token_auth)
+def delete_my_avatar() -> tuple[str, int]:
+    """Delete my avatar"""
+    user: User = token_auth.current_user()
+    delete_image(user.socials.avatar, path='profiles')
+    user.socials.avatar = current_app.config['DEFAULT_AVATAR']
+    db.session.commit()
+    return '', 204

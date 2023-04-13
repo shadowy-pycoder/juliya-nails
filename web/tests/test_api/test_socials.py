@@ -1,10 +1,14 @@
+import os
+
+from apifairy.fields import FileStorage
+from flask import current_app
 from flask.testing import FlaskClient
 import sqlalchemy as sa
-
 
 from tests.test_api.test_users import TESTING_USER
 from website import db
 from website.models import SocialMedia
+from website.utils import delete_image
 
 
 def test_all_socials(client: FlaskClient, token: str) -> None:
@@ -65,3 +69,44 @@ def test_update_my_socials(client: FlaskClient, token: str) -> None:
                           headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 400
     assert len(response.get_json()['errors']['json']) == len(invalid_payload)
+
+
+def test_update_avatar(client: FlaskClient, token: str, image_file: FileStorage) -> None:
+    response = client.get('api/v1/me/socials', headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
+    old_avatar = response.get_json()['avatar']
+    socials = db.session.scalar(sa.select(SocialMedia).filter_by(user_id=TESTING_USER))
+    assert socials is not None
+    assert socials.avatar == old_avatar
+    response = client.put('api/v1/me/socials/avatar', data={'avatar': image_file},
+                          headers={
+                              'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
+    new_avatar = response.get_json()['avatar']
+    assert old_avatar != new_avatar
+    assert socials.avatar == new_avatar
+    avatar_path = os.path.join(
+        current_app.root_path,
+        current_app.config['UPLOAD_FOLDER'], 'profiles', new_avatar)
+    assert os.path.exists(avatar_path)
+    delete_image(new_avatar, path='profiles')
+    assert not os.path.exists(avatar_path)
+
+
+def test_delete_avatar(client: FlaskClient, token: str, image_file: FileStorage) -> None:
+    response = client.put('api/v1/me/socials/avatar', data={'avatar': image_file},
+                          headers={
+                              'Authorization': f'Bearer {token}'})
+    assert response.status_code == 200
+    old_avatar = response.get_json()['avatar']
+    avatar_path = os.path.join(
+        current_app.root_path,
+        current_app.config['UPLOAD_FOLDER'], 'profiles', old_avatar)
+    assert os.path.exists(avatar_path)
+    response = client.delete('api/v1/me/socials/avatar', headers={
+        'Authorization': f'Bearer {token}'})
+    assert response.status_code == 204
+    socials = db.session.scalar(sa.select(SocialMedia).filter_by(user_id=TESTING_USER))
+    assert socials is not None
+    assert socials.avatar == current_app.config['DEFAULT_AVATAR']
+    assert not os.path.exists(avatar_path)

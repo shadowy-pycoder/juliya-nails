@@ -9,13 +9,14 @@ from ..common import sanitize_query
 from ... import db, token_auth
 from ...models import Post, User, get_or_404
 from ...schemas import (PostSchema, PostFieldSchema, PostSortSchema, PostFilterSchema,
-                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
+                        NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema, PostImageSchema)
 from ...utils import admin_required, delete_image
 
 for_posts = Blueprint('for_posts', __name__)
 
 post_schema = PostSchema()
 posts_schema = PaginatedSchema(PostSchema(many=True))
+image_schema = PostImageSchema()
 
 
 @for_posts.route('/posts', methods=['POST'])
@@ -101,6 +102,40 @@ def delete_one(post_id: int) -> tuple[str, int]:
     post = get_or_404(Post, post_id)
     delete_image(post.image)
     db.session.delete(post)
+    db.session.commit()
+    return '', 204
+
+
+@for_posts.route('/posts/<int:post_id>/image', methods=['PUT'])
+@authenticate(token_auth)
+@admin_required
+@body(image_schema, location='form')
+@response(post_schema)
+@other_responses({
+    404: (NotFoundSchema, 'Post not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
+})
+def update_post_image(kwargs: dict, post_id: int) -> Response:
+    """Update post image"""
+    post = get_or_404(Post, post_id)
+    delete_image(post.image, path='posts')
+    post.image = kwargs['image']
+    db.session.commit()
+    return post
+
+
+@for_posts.route('/posts/<int:post_id>/image', methods=['DELETE'])
+@authenticate(token_auth)
+@admin_required
+@other_responses({
+    404: (NotFoundSchema, 'Post not found'),
+    403: (ForbiddenSchema, 'You are not allowed to perform this operation')
+})
+def delete_post_image(post_id: int) -> tuple[str, int]:
+    """Delete post image"""
+    post = get_or_404(Post, post_id)
+    delete_image(post.image)
+    post.image = None  # type: ignore[assignment]
     db.session.commit()
     return '', 204
 

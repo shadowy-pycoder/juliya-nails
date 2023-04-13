@@ -1,7 +1,7 @@
 from datetime import datetime, date
 import re
 from typing import Any, Type
-
+from apifairy.fields import FileField, FileStorage
 from marshmallow import validate, validates, ValidationError, post_load, Schema, validates_schema
 import sqlalchemy as sa
 from webargs import fields
@@ -9,7 +9,7 @@ from werkzeug.exceptions import Forbidden, NotFound
 
 from . import ma, db, token_auth
 from .models import User, Post, SocialMedia, Entry, Service
-from .utils import PATTERNS
+from .utils import PATTERNS, save_image, delete_image
 
 paginated_cache: dict[Type[Schema], Type[Schema]] = {}
 
@@ -127,6 +127,46 @@ class UserInfoSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     username = ma.auto_field(dump_only=True)
 
 
+class UserAvatarSchema(ma.Schema):  # type: ignore[name-defined]
+    avatar = FileField()
+
+    @validates_schema
+    def validate_uploaded_file(self, data: dict, **kwargs: dict) -> None:
+        file: FileStorage = data.get('avatar', None)
+        if file:
+            if type(file) != FileStorage:
+                raise ValidationError('Invalid content. Only PNG, JPG/JPEG files accepted')
+            elif file.content_type not in {"image/jpeg", "image/png"}:
+                raise ValidationError(f"Invalid file_type: {file.content_type}. Only PNG, JPG/JPEG images accepted.")
+
+    @post_load
+    def manage_avatar(self, data: dict[str, FileStorage], **kwargs: dict[str, Any]) -> dict[str, str]:
+        if 'avatar' in data:
+            user: User = token_auth.current_user()
+            delete_image(user.socials.avatar, path='profiles')
+            data['avatar'] = save_image(data['avatar'], path='profiles')
+        return data
+
+
+class PostImageSchema(ma.Schema):  # type: ignore[name-defined]
+    image = FileField()
+
+    @validates_schema
+    def validate_uploaded_file(self, data: dict, **kwargs: dict) -> None:
+        file: FileStorage = data.get('image', None)
+        if file:
+            if type(file) != FileStorage:
+                raise ValidationError('Invalid content. Only PNG, JPG/JPEG files accepted')
+            elif file.content_type not in {"image/jpeg", "image/png"}:
+                raise ValidationError(f"Invalid file_type: {file.content_type}. Only PNG, JPG/JPEG images accepted.")
+
+    @post_load
+    def manage_avatar(self, data: dict[str, FileStorage], **kwargs: dict[str, Any]) -> dict[str, str]:
+        if 'image' in data:
+            data['image'] = save_image(data['image'], path='posts')
+        return data
+
+
 class SocialMediaSchema(ma.SQLAlchemySchema):  # type: ignore[name-defined]
     class Meta:
         model = SocialMedia
@@ -228,10 +268,6 @@ class CreateEntrySchema(EntrySchema):  # type: ignore[name-defined]
     def validate_date(self, value: datetime) -> None:
         if value < date.today():
             raise ValidationError('Date cannot be lower than current date')
-
-
-class EmptySchema(ma.Schema):  # type: ignore[name-defined]
-    pass
 
 
 class UserFieldSchema(ma.Schema):  # type: ignore[name-defined]

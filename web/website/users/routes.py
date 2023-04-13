@@ -219,7 +219,7 @@ def update_profile(username: str) -> Response | str:
                     field.data = current_app.config['DEFAULT_AVATAR']
                 elif field.data and field.name in ['avatar']:
                     delete_image(user.socials.avatar, path='profiles')
-                    field.data = save_image(form.avatar, path='profiles')
+                    field.data = save_image(form.avatar.data, path='profiles')
                 elif field.name in ['avatar']:
                     field.data = user.socials.avatar
                 elif not field.data:

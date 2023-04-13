@@ -73,3 +73,15 @@ def test_admin_access(client: FlaskClient) -> None:
     response = client.delete(f'/api/v1/entries/{entry.uuid}',
                              headers={'Authorization': f'Bearer {token}'})
     assert response.status_code == 403
+    response = client.put(f'/api/v1/users/{TESTING_USER}/socials/avatar',
+                          headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 403
+    response = client.delete(f'/api/v1/users/{TESTING_USER}/socials/avatar',
+                             headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 403
+    response = client.put(f'/api/v1/posts/{post.id}/image',
+                          headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 403
+    response = client.delete(f'/api/v1/posts/{post.id}/image',
+                             headers={'Authorization': f'Bearer {token}'})
+    assert response.status_code == 403
