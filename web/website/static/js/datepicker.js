@@ -1,3 +1,10 @@
+const timePicker = document.querySelector('#timepicker');
+const timeSelector = document.createElement('select');
+timeSelector.classList.add('form-control', 'timeselector');
+timePicker.insertAdjacentElement('afterend', timeSelector);
+timeSelector.hidden = true;
+
+
 flatpickr("#timepicker", {
     enableTime: true,
     noCalendar: true,
@@ -21,17 +28,23 @@ flatpickr("#datepicker", {
         getEntries(instance.element.value).then(result => showEntries(result));
     }
 });
+$('#multiselect').select2({
+    theme: "bootstrap-5",
+    width: $(this).data('width') ? $(this).data('width') : $(this).hasClass('w-100') ? '100%' : 'style',
+    placeholder: $(this).data('placeholder'),
+    closeOnSelect: false,
+    tags: true,
+    allowClear: true,
+});
 
-const multiSelect = document.querySelector('#multiselect');
-const timePicker = document.querySelector('#timepicker');
-const timeSelector = document.createElement('select');
-timeSelector.classList.add('form-control', 'timeselector');
-timePicker.insertAdjacentElement('afterend', timeSelector);
-timeSelector.hidden = true;
-
+$('#multiselect').on('change', () => {
+    const datePicker = document.querySelector('#datepicker');
+    getEntries(datePicker.value).then(result => showEntries(result));
+});
 
 
 function retrieveServices() {
+    const multiSelect = document.querySelector('#multiselect');
     const selected = Array.from(multiSelect.options)
         .filter(option => option.selected)
         .map(option => option.value);
@@ -65,13 +78,24 @@ async function getServicesDuration(idArray) {
     return duration.reduce((a, b) => a + b, 0);
 }
 
-function showEntries(data) {
+function generateOption(startDate, adjDuration) {
+    startHours = startDate.getHours().toString().padStart(2, '0');
+    startMinutes = startDate.getMinutes().toString().padStart(2, '0');
+    endDate = new Date(startDate.getTime() + adjDuration);
+    endHours = endDate.getHours().toString().padStart(2, '0');
+    endMinutes = endDate.getMinutes().toString().padStart(2, '0');
+    return [`${startHours}:${startMinutes}`, `${endHours}:${endMinutes}`];
+}
 
+function showEntries(data) {
     if (!data.results.length) {
         timePicker.hidden = false;
         timeSelector.hidden = true;
     } else {
         const services = retrieveServices();
+        if (!services.length) {
+            return;
+        }
         timeSelector.hidden = false;
         timePicker.hidden = true;
         let option = null;
@@ -83,49 +107,69 @@ function showEntries(data) {
             const secondsBefore = new Date(entryArray[0].timestamp * 1000) - startDay; // number of milliseconds before the very first entry
             const secondsAfter = endDay - new Date(entryArray[entryArray.length - 1].ending_time * 1000);
             const adjDuration = result * 3600 * 1000; // convert duration to milliseconds
-            const lastEntryEnd = new Date(entryArray[entryArray.length - 1].ending_time * 1000 + adjDuration);
-            const lastEntryHours = lastEntryEnd.getHours().toString().padStart(2, '0');
-            const lastEntryMinutes = lastEntryEnd.getMinutes().toString().padStart(2, '0');
+            let nIntervals = null;
+            let startDate = null;
+            let startTime = null;
+            let endTime = null;
             for (let index = 0; index < entryArray.length; index++) {
                 if (entryArray.length === 1 && secondsBefore < adjDuration && secondsAfter <= 0) {
                     console.log('No time available');
                     break;
                 }
                 const entryStart = new Date(entryArray[index].timestamp * 1000);
-                const entryStartHours = entryStart.getHours();
-                const entryStartMinutes = entryStart.getMinutes();
-                const entryEnd = new Date(entryArray[index].ending_time * 1000);
-                const entryEndHours = entryEnd.getHours();
-                const entryEndMinutes = entryEnd.getMinutes();
                 const prevEntryEnd = new Date(entryArray[index - 1]?.ending_time * 1000);
-                const prevHours = prevEntryEnd.getHours().toString().padStart(2, '0');
-                const prevMinutes = prevEntryEnd.getMinutes().toString().padStart(2, '0');
+
                 if (index === 0) { // edge case: first entry
                     if (secondsBefore >= adjDuration) {
-                        nIntervals = (secondsBefore - adjDuration) / 1800;
+                        nIntervals = (secondsBefore - adjDuration) / 1800 / 1000 + 1;
                         for (let i = 0; i < nIntervals; i++) {
-                            //console.log(new Date())
+                            startDate = new Date(startDay + 1800 * 1000 * i);
+                            [startTime, endTime] = generateOption(startDate, adjDuration);
+                            console.log(`${startTime}-${endTime}`);
                         }
-                        console.log(`8:00-${entryStartHours.toString().padStart(2, '0')}:${entryStartMinutes.toString().padStart(2, '0')}`)
                     }
                     if (entryArray.length === 1) {
                         if (secondsAfter >= adjDuration) {
-                            console.log(`${entryEndHours.toString().padStart(2, '0')}:${entryEndMinutes.toString().padStart(2, '0')}-20:00`);
+                            nIntervals = (secondsAfter - adjDuration) / 1800 / 1000 + 1;
+                            for (let i = 0; i < nIntervals; i++) {
+                                startDate = new Date((entryArray[index].ending_time + 1800 * i) * 1000);
+                                [startTime, endTime] = generateOption(startDate, adjDuration);
+                                console.log(`${startTime}-${endTime}`);
+                            }
                         } else if (secondsAfter > 0 && secondsAfter < adjDuration) {
-                            console.log(`${entryEndHours.toString().padStart(2, '0')}:${entryEndMinutes.toString().padStart(2, '0')}-${lastEntryHours}:${lastEntryMinutes}`);
+                            startDate = new Date(entryArray[index].ending_time * 1000);
+                            [startTime, endTime] = generateOption(startDate, adjDuration);
+                            console.log(`${startTime}-${endTime}`);
                         }
                     }
                 } else if (index === entryArray.length - 1) { // edge case: last entry
                     if (entryStart - prevEntryEnd >= adjDuration) {
-                        console.log(`${prevHours}:${prevMinutes}-${entryStartHours.toString().padStart(2, '0')}:${entryStartMinutes.toString().padStart(2, '0')}`);
+                        nIntervals = (entryStart - prevEntryEnd - adjDuration) / 1800 / 1000 + 1;
+                        for (let i = 0; i < nIntervals; i++) {
+                            startDate = new Date((entryArray[index - 1].ending_time + 1800 * i) * 1000);
+                            [startTime, endTime] = generateOption(startDate, adjDuration);
+                            console.log(`${startTime}-${endTime}`);
+                        }
                     }
                     if (secondsAfter >= adjDuration) {
-                        console.log(`${entryEndHours.toString().padStart(2, '0')}:${entryEndMinutes.toString().padStart(2, '0')}-20:00`);
+                        nIntervals = (secondsAfter - adjDuration) / 1800 / 1000 + 1;
+                        for (let i = 0; i < nIntervals; i++) {
+                            startDate = new Date((entryArray[index].ending_time + 1800 * i) * 1000);
+                            [startTime, endTime] = generateOption(startDate, adjDuration);
+                            console.log(`${startTime}-${endTime}`);
+                        }
                     } else if (secondsAfter > 0 && secondsAfter < adjDuration) {
-                        console.log(`${entryEndHours.toString().padStart(2, '0')}:${entryEndMinutes.toString().padStart(2, '0')}-${lastEntryHours}:${lastEntryMinutes}`);
+                        startDate = new Date(entryArray[index].ending_time * 1000);
+                        [startTime, endTime] = generateOption(startDate, adjDuration);
+                        console.log(`${startTime}-${endTime}`);
                     }
                 } else if (entryStart - prevEntryEnd >= adjDuration) {
-                    console.log(`${prevHours}:${prevMinutes}-${entryStartHours.toString().padStart(2, '0')}:${entryStartMinutes.toString().padStart(2, '0')}`);
+                    nIntervals = (entryStart - prevEntryEnd - adjDuration) / 1800 / 1000 + 1;
+                    for (let i = 0; i < nIntervals; i++) {
+                        startDate = new Date((entryArray[index - 1].ending_time + 1800 * i) * 1000);
+                        [startTime, endTime] = generateOption(startDate, adjDuration);
+                        console.log(`${startTime}-${endTime}`);
+                    }
                 }
             }
             //next code here
