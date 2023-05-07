@@ -23,7 +23,17 @@
 
 
     <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    {% block scripts %}
+    <script defer src="https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.slim.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
+        integrity="sha256-m81NDyncZVbr7v9E6qCWXwx/cwjuWDlHCMzi9pjMobA=" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script defer src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/intlTelInput.min.js"
+        integrity="sha512-x1RjK1QHIg0CA4lP7CFG98UXDy04pYBPuepiMd4bkJ7sqEfAPHNmVbkBxVDG3zpnolqMX2cd1mX13HlvwZfA8w=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script defer src="{{ url_for('static', filename='js/main.js') }}"></script>
+    {% endblock %}
 
     {% if title %}
     <title>Juliya Nails - {{ title }}</title>
@@ -117,14 +127,7 @@
 
 
 
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.0/dist/jquery.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"
-        integrity="sha256-m81NDyncZVbr7v9E6qCWXwx/cwjuWDlHCMzi9pjMobA=" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.21/js/intlTelInput.min.js"
-        integrity="sha512-x1RjK1QHIg0CA4lP7CFG98UXDy04pYBPuepiMd4bkJ7sqEfAPHNmVbkBxVDG3zpnolqMX2cd1mX13HlvwZfA8w=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+
 
 
 </body>

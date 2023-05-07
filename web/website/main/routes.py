@@ -24,7 +24,7 @@ def about() -> str:
 
 
 def handle_error(error: HTTPException) -> Response | tuple[str, int]:
-    if request.mimetype == 'application/json':
+    if (request.mimetype or request.headers['accept']) == 'application/json':
         response = jsonify({
             'code': error.code,
             'message': error.name,
