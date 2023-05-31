@@ -155,25 +155,25 @@ function showEntries(data, currentEntry) {
         if (!services.length) {
             return;
         }
-        timeSelector.hidden = false;
-        timePicker.hidden = true;
-        option = new Option('Select your option', '', true, true);
-        option.disabled = true;
-        timeSelector.append(option);
-        editEntryBtn.disabled = true;
         getServicesDuration(services).then(result => {
             let entryArray = data.results.map((x) => x); // make a copy of entry array
             const entriesDate = entryArray[0].date; // retrieve actual day to calculate 8:00 and 20:00 of the day in milliseconds
             if (currentEntry.date === entriesDate) {
                 // we should ignore current entry when calculating time windows
                 entryArray = entryArray.filter(entry => entry.timestamp !== currentEntry.timestamp);
-                if (!entryArray.length) {
+                if (!entryArray.length) { // edge case: use timepicker instead
                     timePicker.hidden = false;
                     timeSelector.hidden = true;
                     editEntryBtn.disabled = false;
                     return;
                 }
             }
+            timeSelector.hidden = false;
+            timePicker.hidden = true;
+            option = new Option('Select your option', '', true, true);
+            option.disabled = true;
+            timeSelector.append(option);
+            editEntryBtn.disabled = true;
             const startDay = new Date(entriesDate).setHours(8, 0); // start of the day in milliseconds
             const endDay = new Date(entriesDate).setHours(20, 0); // end of the day in milliseconds
             const secondsBefore = new Date(entryArray[0].timestamp * 1000) - startDay; // number of milliseconds before the very first entry
