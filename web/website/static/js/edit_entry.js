@@ -41,6 +41,7 @@ window.addEventListener("load", (event) => {
         } // reload page twice to correctly load select2 options
         servicesToSelect(currentEntry); // preselect options for better UX
         datePicker.value = currentEntry.date; // preselect date
+        timePicker.value = currentEntry.time.slice(0, 5); // preselect time for better UX
         // list number of availbale time windows, should include time window for current entry
         getEntries(currentEntry.date).then(entries => showEntries(entries, currentEntry));
     });
@@ -56,7 +57,6 @@ function servicesToSelect(entry) {
         option.dispatchEvent(new Event('change'));
     });
 }
-
 
 flatpickr("#timepicker", {
     enableTime: true,
@@ -147,6 +147,7 @@ function showEntries(data, currentEntry) {
         timePicker.hidden = false;
         timeSelector.hidden = true;
         editEntryBtn.disabled = false;
+        timePicker.value = currentEntry.time.slice(0, 5);
     } else {
         while (timeSelector.firstChild) {
             timeSelector.firstChild.remove();
@@ -165,6 +166,7 @@ function showEntries(data, currentEntry) {
                     timePicker.hidden = false;
                     timeSelector.hidden = true;
                     editEntryBtn.disabled = false;
+                    timePicker.value = currentEntry.time.slice(0, 5);
                     return;
                 }
             }
@@ -185,10 +187,6 @@ function showEntries(data, currentEntry) {
             let endTime = null;
 
             for (let index = 0; index < entryArray.length; index++) {
-                if (entryArray.length === 1 && secondsBefore < adjDuration && secondsAfter <= 0) { // a rare case that should never happen (one entry that takes the whole working day)
-                    console.log('No time available');
-                    break;
-                }
                 const entryStart = new Date(entryArray[index].timestamp * 1000);
                 const prevEntryEnd = new Date(entryArray[index - 1]?.ending_time * 1000);
 
