@@ -31,9 +31,9 @@ class EntryForm(CustomValidatorsMixin, FlaskForm):
                                    DataRequired()
                                    ], id='multiselect', render_kw={"data-placeholder": "Choose service..."},
                                    choices=[], coerce=int)
-    date = DateField('local', validators=[DataRequired()], id='datepicker')
+    date = DateField('Date', validators=[DataRequired()], id='datepicker')
     time = TimeField('Time', validators=[DataRequired()], id='timepicker')
-    submit = SubmitField('Update Email')
+    submit = SubmitField('Create Entry')
 
 
 class UpdateProfileForm(CustomValidatorsMixin, FlaskForm):

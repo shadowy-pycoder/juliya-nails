@@ -1,4 +1,8 @@
 {% extends "layout.html" %}
+{% block scripts%}
+{{super()}}
+<script defer src="{{ url_for('static', filename='js/edit_entry.js')}}"></script>
+{% endblock%}
 
 
 
@@ -67,9 +71,10 @@
                 </div>
             </fieldset>
             <div class="form-group">
-                {{ form.submit(class="btn btn-outline-info") }}
+                {{ form.submit(class="btn btn-outline-info edit-entry-btn") }}
             </div>
         </form>
     </div>
 </div>
+
 {% endblock content %}
