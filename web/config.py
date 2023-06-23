@@ -3,9 +3,13 @@ from dotenv import load_dotenv
 
 
 dotenv_path = os.path.join(os.path.dirname(__file__), ".env")
+dotenv_db_path = os.path.join(os.path.dirname(__file__), ".env.postgres")
 
 if os.path.exists(dotenv_path):
     load_dotenv(dotenv_path)
+
+if os.path.exists(dotenv_db_path):
+    load_dotenv(dotenv_db_path)
 
 
 class Config:
@@ -35,6 +39,10 @@ class DevelopmentConfig(Config):
 class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ['TESTING_DATABASE_URI']
     TESTING = True
+
+
+class ProductionConfig(Config):
+    pass
 
 
 def populate(cls: str = 'Config') -> dict:

@@ -10,7 +10,6 @@ from ... import db, token_auth
 from ...models import Entry, User, Service, get_or_404
 from ...schemas import (EntrySchema, CreateEntrySchema, EntryFieldSchema, EntrySortSchema, EntryFilterSchema,
                         NotFoundSchema, ForbiddenSchema, PaginationSchema, PaginatedSchema)
-from ...utils import admin_required
 
 for_entries = Blueprint('for_entries', __name__)
 

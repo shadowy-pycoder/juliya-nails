@@ -1,0 +1,64 @@
+version: "3.8"
+services:
+  web:
+    image: juliyanails-prod
+    container_name: juliyanails-prod
+    build:
+      context: ${APP_FOLDER}
+      dockerfile: Dockerfile
+    volumes:
+      - image_data:/app/website/static/images
+    ports:
+      - 5000:5000
+    env_file:
+      - ${APP_FOLDER}/.env
+    restart: unless-stopped
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "bash",
+          "-c",
+          "curl",
+          "-f",
+          "https://${DOMAIN}/up"
+        ]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 5s
+    networks:
+      - juliyanails_network
+    depends_on:
+      - db
+  db:
+    image: postgres:15
+    env_file:
+      - ${APP_FOLDER}/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    restart: unless-stopped
+    networks:
+      - juliyanails_network
+  nginx:
+    build:
+      context: nginx
+      args:
+        DOMAIN: ${DOMAIN}
+        EMAIL: ${EMAIL}
+        FLASK: web
+    restart: unless-stopped
+    ports:
+      - 81:80
+      - 444:443
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+    networks:
+      - juliyanails_network
+    depends_on:
+      - web
+volumes:
+  postgres_data:
+  image_data:
+networks:
+  juliyanails_network:

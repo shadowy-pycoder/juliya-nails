@@ -1,5 +1,6 @@
 from flask import render_template, Blueprint, flash, redirect, url_for, abort, request, jsonify
 import sqlalchemy as sa
+from sqlalchemy.sql import text
 from werkzeug.exceptions import HTTPException
 from werkzeug.wrappers.response import Response
 
@@ -85,3 +86,10 @@ def delete_post(post_id: int) -> Response:
     db.session.commit()
     flash('Your post has been deleted!', 'success')
     return redirect(url_for('main.home'))
+
+
+@main.route('/up')
+@admin_required
+def up() -> str:
+    db.session.execute(text('SELECT 1'))
+    return 'Healthy: OK'
