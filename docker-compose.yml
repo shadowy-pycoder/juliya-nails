@@ -29,17 +29,22 @@ services:
       start_period: 5s
     networks:
       - juliyanails_network
+    secrets:
+      - db_password
+      - flask_secret_key
     depends_on:
       - db
   db:
     image: postgres:15
     env_file:
-      - ${APP_FOLDER}/.env
+      - ${APP_FOLDER}/.env-db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     restart: unless-stopped
     networks:
       - juliyanails_network
+    secrets:
+      - db_password
   nginx:
     build:
       context: nginx
@@ -62,3 +67,8 @@ volumes:
   image_data:
 networks:
   juliyanails_network:
+secrets:
+  db_password:
+    file: db_password.txt
+  flask_secret_key:
+    file: flask_secret_key.txt
